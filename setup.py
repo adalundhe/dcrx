@@ -16,7 +16,7 @@ with open (os.path.join(current_directory, ".version"), 'r') as version_file:
 setup(
     name="dcrx",
     version=version_string,
-    description="Easy project setup and migration.",
+    description="A library for typesafe, programmatic generation of Docker images via SQL-builder like API.",
     long_description=package_description,
     long_description_content_type="text/markdown",
     author="Sean Corbett",
