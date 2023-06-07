@@ -1,4 +1,10 @@
 # dcrx
+[![PyPI version](https://img.shields.io/pypi/v/dcrx?color=gre)](https://pypi.org/project/dcrx/)
+[![License](https://img.shields.io/github/license/scorbettUM/dcrx)](https://github.com/scorbettUM/dcrx/blob/main/LICENSE)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](https://github.com/scorbettUM/dcrx/blob/main/CODE_OF_CONDUCT.md)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dcrx)](https://pypi.org/project/dcrx/)
+
+
 DockerX (dcrx) is a library for creating Docker images via an SQL query-builder like API. It is designed to facilitate programmatic, typesafe, and in-memory image generation. dcrx is *not* a wrapper around the Docker CLI or API, nor is it an implementation of these things. Rather, it is designed a lightweight, single-dependency means of writing and creating images that can then be provided to the Docker CLI or SDK for consumption.
 
 
