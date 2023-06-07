@@ -2,7 +2,7 @@ from pydantic import (
     BaseModel,
     StrictStr,
     StrictBool,
-    StrictInt
+    constr
 )
 
 from typing import Union, Optional
@@ -12,11 +12,11 @@ class Add(BaseModel):
     destination: StrictStr
     user_id: Optional[StrictStr]
     group_id: Optional[StrictStr]
-    permissions: Optional[StrictInt]
+    permissions: Optional[constr(max_length=4, regex='^[0-9]*$')]
     checksum: Optional[StrictStr]
     link: StrictBool=False
 
-    def actualize(self) -> str:
+    def to_string(self) -> str:
         add_string = 'ADD'
 
         if self.user_id and self.group_id:

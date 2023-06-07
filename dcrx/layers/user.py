@@ -10,7 +10,7 @@ class User(BaseModel):
     user_id: StrictStr
     group_id: Optional[StrictStr]
 
-    def actualize(self):
+    def to_string(self):
         if self.group_id:
             return f'USER {self.user_id}:{self.group_id}'
         

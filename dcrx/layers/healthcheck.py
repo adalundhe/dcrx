@@ -13,8 +13,8 @@ class Healthcheck(BaseModel):
     retries: StrictInt
     command: Cmd
 
-    def actualize(self) -> str:
-        command = self.command.actualize()
+    def to_string(self) -> str:
+        command = self.command.to_string()
 
         timings = f'--interval={self.interval}s --timeout={self.timeout}s --start-period={self.start_period}s'
 

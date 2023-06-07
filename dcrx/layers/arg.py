@@ -12,7 +12,7 @@ class Arg(BaseModel):
     name: StrictStr
     default: Optional[Union[StrictStr, StrictInt, StrictBool, StrictFloat]]
 
-    def actualize(self) -> str:
+    def to_string(self) -> str:
 
         default = self.default
         if isinstance(default, str):

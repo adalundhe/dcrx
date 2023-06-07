@@ -9,5 +9,5 @@ class Label(BaseModel):
     name: StrictStr
     value: StrictStr
 
-    def actualize(self) -> str:
+    def to_string(self) -> str:
         return f'ENV {self.name}="{self.value}"'

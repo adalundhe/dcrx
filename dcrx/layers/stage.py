@@ -10,7 +10,7 @@ class Stage(BaseModel):
     tag: StrictStr
     alias: Optional[StrictStr]
 
-    def actualize(self) -> str:
+    def to_string(self) -> str:
         
         if self.alias:
             return f'FROM {self.base}:{self.tag} as {self.alias}'

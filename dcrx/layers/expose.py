@@ -10,7 +10,7 @@ from typing import List
 class Expose(BaseModel):
     ports: conlist(StrictInt, min_items=1)
 
-    def actualize(self):
+    def to_string(self):
         exposed_ports = ' '.join([
             str(port) for port in self.ports
         ])

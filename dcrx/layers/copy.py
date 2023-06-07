@@ -3,8 +3,8 @@ from pydantic import (
     FilePath,
     DirectoryPath,
     StrictStr,
-    StrictInt,
-    StrictBool
+    StrictBool,
+    constr
 )
 
 from typing import Union, Optional
@@ -15,11 +15,11 @@ class Copy(BaseModel):
     destination: StrictStr
     user_id: Optional[StrictStr]
     group_id: Optional[StrictStr]
-    permissions: Optional[StrictInt]
+    permissions: Optional[constr(max_length=4, regex='^[0-9]*$')]
     from_source: Optional[StrictStr]
     link: StrictBool=False
 
-    def actualize(self) -> str:
+    def to_string(self) -> str:
         copy_string = 'COPY'
 
         if self.user_id and self.group_id:
@@ -37,4 +37,4 @@ class Copy(BaseModel):
         if self.link:
             copy_string = f'{copy_string} --link'
 
-        return f'{copy_string} {self.source} {self.destination}'
+        return f'{copy_string} ./{self.source} {self.destination}'

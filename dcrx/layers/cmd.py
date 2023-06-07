@@ -12,7 +12,7 @@ from typing import List, Union
 class Cmd(BaseModel):
     command: List[Union[StrictStr, StrictInt, StrictFloat, StrictBool]]
 
-    def actualize(self):
+    def to_string(self):
         command = ', '.join([
             f'"{arg}"' for arg in self.command
         ])

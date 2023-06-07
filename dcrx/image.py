@@ -1,4 +1,15 @@
-from typing import List, Union, Optional
+import io
+import tarfile
+import pathlib
+from typing import (
+    List, 
+    Union, 
+    Optional,
+    Callable,
+    Dict,
+    Any,
+    Literal
+)
 from .layers import (
     Add,
     Arg,
@@ -15,17 +26,28 @@ from .layers import (
     Volume,
     Workdir
 )
+from .layers.mount_types import (
+    BindMount,
+    CacheMount,
+    SecretMount,
+    SSHMount,
+    TMPFSMount
+)
+from .memory_file import MemoryFile
+
 
 class Image:
 
     def __init__(
         self,
         name: str,
-        version: str=None,
+        tag: str="latest",
         registry: str=None
     ) -> None:
         self.name = name
-        self.version = version
+        self.tag = tag
+        self.files: List[str] = []
+        
         self.registry = registry
         self.layers: List[
             Union[
@@ -42,10 +64,91 @@ class Image:
             ]
         ] = []
 
-    def actualize(self) -> str:
-        return '\n'.join([
-            layer.actualize() for layer in self.layers
+        self._mount_types: Dict[
+            str,
+            Callable[
+                [Dict[str, Any]],
+                Union[
+                    BindMount,
+                    CacheMount,
+                    SecretMount,
+                    SSHMount,
+                    TMPFSMount
+                ]
+            ]
+        ] = {
+            'bind': lambda config: BindMount(**config),
+            'cache': lambda config: CacheMount(**config),
+            'secret': lambda config: SecretMount(**config),
+            'ssh': lambda config: SSHMount(**config),
+            'tmpfs': lambda config: TMPFSMount(**config)
+        }
+
+    @property
+    def full_name(self):
+        return f'{self.name}:{self.tag}'
+
+    def to_string(self) -> str:
+        return '\n\n'.join([
+            layer.to_string() for layer in self.layers
         ])
+    
+    def to_context(self) -> io.BytesIO:
+
+        image_file = MemoryFile(
+            self.to_string().encode()
+        )
+
+        image_file.seek(0)
+
+        tar_file_number = image_file.file_number + 1
+
+        tar_file = MemoryFile(
+            b'', 
+            file_number=tar_file_number
+        )
+
+        context = tarfile.open(
+            fileobj=tar_file, 
+            mode='w'
+        )
+
+        image_file_info = context.gettarinfo(
+            fileobj=image_file, 
+            arcname='Dockefile'
+        )
+
+        context.addfile(
+            image_file_info, 
+            image_file
+        )
+
+        for file in self.files:
+            filename = pathlib.Path(file).name
+
+            with open(file, "rb") as context_file:
+                info = context.gettarinfo(
+                    fileobj=context_file, 
+                    arcname=filename
+                )
+                
+                context.addfile(info, context_file)
+
+        context.close()
+        tar_file.seek(0)
+
+        return tar_file
+    
+    def to_file(
+        self,
+        path: str
+    ):
+        self.files.append(path)
+
+        with open(path, 'w') as dockerfile:
+            dockerfile.write(
+                self.to_string()
+            )
     
     def add(
         self,
@@ -120,16 +223,20 @@ class Image:
         from_source: Optional[str]=None,
         link: bool=False
     ):
-        self.layers.append(
-            Copy(
-                source=source,
-                destination=destination,
-                user_id=user_id,
-                group_id=group_id,
-                permissions=permissions,
-                from_source=from_source,
-                link=link
-            )
+        copy_layer = Copy(
+            source=source,
+            destination=destination,
+            user_id=user_id,
+            group_id=group_id,
+            permissions=permissions,
+            from_source=from_source,
+            link=link
+        )
+
+        self.layers.append(copy_layer)
+
+        self.files.append(
+            f'./{copy_layer.source}'
         )
 
         return self
@@ -221,11 +328,37 @@ class Image:
 
     def run(
         self,
-        command: str
+        command: str,
+        network: Optional[
+            Literal["default", "host", "none"]
+        ]=None,
+        security: Optional[
+            Literal["insecure", "sandbox"]
+        ]=None,
+        mount: Optional[Dict[str, Any]]=None
     ):
+        
+        mount_type: Union[
+            BindMount,
+            CacheMount,
+            SecretMount,
+            SSHMount,
+            TMPFSMount,
+            None
+        ] = None
+
+        if mount:
+            mount_type_name = mount.get('mount_type', 'bind')
+            mount_type = self._mount_types.get(
+                mount_type_name
+            )(mount)
+
         self.layers.append(
             Run(
-                command=command
+                command=command,
+                mount=mount_type,
+                network=network,
+                security=security
             )
         )
 

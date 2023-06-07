@@ -8,7 +8,7 @@ from pydantic import (
 class Volume(BaseModel):
     paths: conlist(StrictStr, min_items=1)
 
-    def actualize(self):
+    def to_string(self):
         paths = ', '.join(self.paths)
 
         return f'VOLUME [{paths}]'

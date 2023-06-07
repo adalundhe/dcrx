@@ -12,7 +12,7 @@ class Env(BaseModel):
     key: StrictStr
     value: Union[StrictStr, StrictInt, StrictBool, StrictFloat]
 
-    def actualize(self) -> str:
+    def to_string(self) -> str:
 
         value = self.value
         if isinstance(value, str):
