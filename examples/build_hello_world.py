@@ -27,7 +27,7 @@ client = docker.DockerClient(
 
 context = hello_world.to_context()
 client.images.build(
-    dockerfile='Dockerfile.test-images',
+    dockerfile=hello_world.filename,
     fileobj=context,
     tag=hello_world.full_name,
     custom_context=True,

@@ -42,7 +42,6 @@ class Image:
         self,
         name: str,
         tag: str="latest",
-        registry: str=None,
         filename: str=None
     ) -> None:
         self.name = name
@@ -54,8 +53,6 @@ class Image:
             filename = f'Dockerfile.{stub}'
 
         self.filename = filename
-        
-        self.registry = registry
         self.layers: List[
             Union[
                 Arg,
