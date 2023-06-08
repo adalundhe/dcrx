@@ -1,12 +1,13 @@
 from pydantic import (
     BaseModel,
-    StrictStr,
     StrictInt
 )
+from typing import Literal
 from .cmd import Cmd
 
 
 class Healthcheck(BaseModel):
+    layer_type: Literal["healthcheck"]="healthcheck"
     interval: StrictInt
     timeout: StrictInt
     start_period: StrictInt

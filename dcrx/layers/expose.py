@@ -4,10 +4,11 @@ from pydantic import (
     conlist
 )
 
-from typing import List
+from typing import Literal
 
 
 class Expose(BaseModel):
+    layer_type: Literal["expose"]="expose"
     ports: conlist(StrictInt, min_items=1)
 
     def to_string(self):

@@ -5,10 +5,11 @@ from pydantic import (
     StrictBool,
     StrictFloat
 )
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 
 
 class Arg(BaseModel):
+    layer_type: Literal["arg"]="arg"
     name: StrictStr
     default: Optional[Union[StrictStr, StrictInt, StrictBool, StrictFloat]]
 

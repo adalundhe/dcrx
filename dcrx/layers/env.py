@@ -5,10 +5,11 @@ from pydantic import (
     StrictBool,
     StrictFloat
 )
-from typing import Union, Optional
+from typing import Union, Literal
 
 
 class Env(BaseModel):
+    layer_type: Literal["env"]="env"
     key: StrictStr
     value: Union[StrictStr, StrictInt, StrictBool, StrictFloat]
 

@@ -7,10 +7,11 @@ from pydantic import (
     constr
 )
 
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 
 
 class Copy(BaseModel):
+    layer_type: Literal["copy"]="copy"
     source: Union[FilePath, DirectoryPath]
     destination: StrictStr
     user_id: Optional[StrictStr]

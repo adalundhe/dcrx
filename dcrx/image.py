@@ -1,4 +1,4 @@
-import io
+import os
 import tarfile
 import pathlib
 from typing import (
@@ -42,11 +42,18 @@ class Image:
         self,
         name: str,
         tag: str="latest",
-        registry: str=None
+        registry: str=None,
+        filename: str=None
     ) -> None:
         self.name = name
         self.tag = tag
         self.files: List[str] = []
+
+        if filename is None:
+            stub = name.replace('/', '.')
+            filename = f'Dockerfile.{stub}'
+
+        self.filename = filename
         
         self.registry = registry
         self.layers: List[
@@ -93,10 +100,14 @@ class Image:
             layer.to_string() for layer in self.layers
         ])
     
-    def to_context(self) -> io.BytesIO:
+    def to_context(self) -> MemoryFile:
+
+        if os.path.exists(self.filename) is False:
+            self.to_file()
 
         image_file = MemoryFile(
-            self.to_string().encode()
+            self.to_string().encode(),
+            name=self.filename
         )
 
         image_file.seek(0)
@@ -114,8 +125,7 @@ class Image:
         )
 
         image_file_info = context.gettarinfo(
-            fileobj=image_file, 
-            arcname='Dockefile'
+            fileobj=image_file
         )
 
         context.addfile(
@@ -139,16 +149,17 @@ class Image:
 
         return tar_file
     
-    def to_file(
-        self,
-        path: str
-    ):
-        self.files.append(path)
+    def to_file(self):
+        self.files.append(self.filename)
 
-        with open(path, 'w') as dockerfile:
+        with open(self.filename, 'w') as dockerfile:
             dockerfile.write(
                 self.to_string()
             )
+
+    def clear(self):
+        os.remove(self.filename)
+        self.layers.clear()
     
     def add(
         self,

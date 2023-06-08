@@ -1,5 +1,6 @@
-from typing import Optional, Union
 import io
+from typing import Optional, Union
+
 
 class MemoryFile(io.BytesIO):
 

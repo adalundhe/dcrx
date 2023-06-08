@@ -6,10 +6,11 @@ from pydantic import (
     StrictFloat
 )
 
-from typing import List, Union
+from typing import List, Union, Literal
 
 
 class Cmd(BaseModel):
+    layer_type: Literal["cmd"]="cmd"
     command: List[Union[StrictStr, StrictInt, StrictFloat, StrictBool]]
 
     def to_string(self):

@@ -6,10 +6,11 @@ from pydantic import (
     StrictFloat
 )
 
-from typing import List, Union
+from typing import List, Literal
 
 
 class Entrypoint(BaseModel):
+    layer_type: Literal["entrypoint"]="entrypoint"
     command: List[StrictStr]
 
     def to_string(self):

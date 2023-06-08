@@ -5,9 +5,10 @@ from pydantic import (
     constr
 )
 
-from typing import Union, Optional
+from typing import Literal, Optional
 
 class Add(BaseModel):
+    layer_type: Literal["add"]="add"
     source: StrictStr
     destination: StrictStr
     user_id: Optional[StrictStr]

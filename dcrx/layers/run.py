@@ -10,6 +10,7 @@ from .mount_types import (
 
 
 class Run(BaseModel):
+    layer_type: Literal["run"]="run"
     command: StrictStr
     mount: Optional[Union[BindMount, CacheMount, SecretMount, SSHMount, TMPFSMount]]
     network: Optional[Literal["default", "host", "none"]]

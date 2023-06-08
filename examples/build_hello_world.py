@@ -2,7 +2,7 @@ import docker
 from dcrx.image import Image
 
 
-hello_world = Image('hello-world')
+hello_world = Image('test-images')
 
 hello_world.stage(
     'python',
@@ -19,15 +19,23 @@ hello_world.stage(
 ).entrypoint([
     "echo",
     "Hello world!"
-]).to_file("Dockerfile")
+])
 
 client = docker.DockerClient(
     base_url="unix:///var/run/docker.sock"
 )
 
+context = hello_world.to_context()
 client.images.build(
-   fileobj=hello_world.to_context(),
-   tag=hello_world.full_name,
-   custom_context=True,
-   nocache=True
+    dockerfile='Dockerfile.test-images',
+    fileobj=context,
+    tag=hello_world.full_name,
+    custom_context=True,
+    nocache=True
 )
+
+
+client.images.push(
+    "corpheus91/test-images"
+)
+hello_world.clear()
