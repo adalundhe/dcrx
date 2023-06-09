@@ -11,4 +11,4 @@ class Label(BaseModel):
     value: StrictStr
 
     def to_string(self) -> str:
-        return f'ENV {self.name}="{self.value}"'
+        return f'LABEL {self.name}="{self.value}"'
