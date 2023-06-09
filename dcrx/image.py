@@ -1,3 +1,4 @@
+import io
 import os
 import tarfile
 import pathlib
@@ -147,6 +148,14 @@ class Image:
         return tar_file
     
     def to_file(self):
+        self.files.append(self.filename)
+
+        with open(self.filename, 'w') as dockerfile:
+            dockerfile.write(
+                self.to_string()
+            )
+
+    def to_memory_file(self):
         self.files.append(self.filename)
 
         with open(self.filename, 'w') as dockerfile:

@@ -38,4 +38,4 @@ client.images.build(
 client.images.push(
     "corpheus91/test-images"
 )
-hello_world.clear()
+# hello_world.clear()
