@@ -117,7 +117,7 @@ ENTRYPOINT ["echo", "Hello world!"]
 
 just like you would write in a Dockerfile.
 
-Finally, we need to write our dcrx image to an actual Dockerfile! Let's chain a final call to `to_file()` passing `Dockefile` as the sole argument.
+Finally, we need to write our dcrx image to an actual Dockerfile! Let's chain a final call to `to_file()` passing `Dockerfile` as the sole argument.
 
 ```python
 from dcrx import Image
@@ -130,7 +130,7 @@ hello_world.stage(
 ).entrypoint([
     "echo",
     "Hello world!"
-]).to_file("Dockefile")
+]).to_file("Dockerfile")
 ```
 
 Now run the script:
@@ -139,7 +139,7 @@ Now run the script:
 python hello_world.py
 ```
 
-You'll immediately see our `Dockefile` is generated in-directory. Opening it up, we see:
+You'll immediately see our `Dockerfile` is generated in-directory. Opening it up, we see:
 
 ```
 FROM python:3.11-slim
