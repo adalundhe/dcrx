@@ -163,8 +163,9 @@ class Image:
             )
 
     def clear(self):
-        os.remove(self.filename)
-        self.layers.clear()
+        if os.path.exists(self.filename):
+            os.remove(self.filename)
+            self.layers.clear()
     
     def add(
         self,
