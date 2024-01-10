@@ -16,7 +16,7 @@ class Copy(BaseModel):
     destination: StrictStr
     user_id: Optional[StrictStr]
     group_id: Optional[StrictStr]
-    permissions: Optional[constr(max_length=4, regex='^[0-9]*$')]
+    permissions: Optional[constr(max_length=4, pattern=r'^[0-9]*$')]
     from_source: Optional[StrictStr]
     link: StrictBool=False
 

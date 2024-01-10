@@ -16,7 +16,7 @@ class CacheMount(BaseModel):
     from_source: Optional[StrictStr]
     readonly: Optional[StrictBool]
     sharing: Literal["shared", "private", "locked"]
-    mode: Optional[constr(max_length=4, regex='^[0-9]*$')]
+    mode: Optional[constr(max_length=4, pattern=r'^[0-9]*$')]
     user_id: Optional[StrictStr]
     group_id: Optional[StrictStr]
 
