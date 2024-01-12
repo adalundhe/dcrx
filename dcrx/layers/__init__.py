@@ -7,8 +7,12 @@ from .env import Env
 from .expose import Expose
 from .healthcheck import Healthcheck
 from .label import Label
+from .maintainer import Maintainer
+from .onbuild import OnBuild
 from .run import Run
+from .shell import Shell
 from .stage import Stage
+from .stopsignal import StopSignal
 from .user import User
 from .volume import Volume
 from .workdir import Workdir

@@ -1,3 +1,4 @@
+import re
 from pydantic import (
     BaseModel,
     StrictStr
@@ -10,3 +11,14 @@ class Workdir(BaseModel):
 
     def to_string(self) -> str:
         return f'WORKDIR {self.path}'
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str
+    ):
+        
+        line = re.sub('WORKDIR', '', line).strip()
+        return Workdir(
+            path=line
+        )

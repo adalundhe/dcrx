@@ -1,3 +1,4 @@
+import re
 from pydantic import (
     BaseModel,
     StrictStr,
@@ -20,3 +21,19 @@ class Env(BaseModel):
             value = f'"{value}"'
 
         return f'ENV {self.key}={value}'
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str
+    ):
+        
+        line = re.sub('ENV', '', line)
+        token = line.strip()
+
+        key, value = token.split('=')
+
+        return Env(
+            key=key,
+            value=value
+        )

@@ -20,8 +20,12 @@ from .layers import (
     Expose,
     Healthcheck,
     Label,
+    Maintainer,
+    OnBuild,
     Run,
+    Shell,
     Stage,
+    StopSignal,
     User,
     Volume,
     Workdir
@@ -62,8 +66,12 @@ class Image:
                 Env,
                 Expose,
                 Healthcheck,
+                Maintainer,
+                OnBuild,
                 Run,
+                Shell,
                 Stage,
+                StopSignal,
                 Workdir
             ]
         ] = []
@@ -341,7 +349,46 @@ class Image:
         )
 
         return self
+    
+    def maintainer(
+        self,
+        author: str
+    ):
+        self.layers.append(
+            Maintainer(
+                author=author
+            )
+        )
+
+        return self
+    
+    def onbuild(
+        self,
+        instruction: (
+            Add |
+            Arg |
+            Cmd |
+            Copy |
+            Entrypoint |
+            Env |
+            Expose |
+            Healthcheck |
+            Label |
+            Run |
+            Shell |
+            StopSignal |
+            User |
+            Volume |
+            Workdir
+        )
+    ):
+        self.layers.append(
+            OnBuild(
+                instruction=instruction
+            )
+        )
         
+        return self
 
     def run(
         self,
@@ -380,6 +427,22 @@ class Image:
         )
 
         return self
+    
+    def shell(
+        self,
+        executable: str,
+        parameters: Optional[
+            List[str | int | float | bool]
+        ]
+    ):
+        self.layers.append(
+            Shell(
+                executable=executable,
+                parameters=parameters
+            )
+        )
+
+        return self
 
     def stage(
         self,
@@ -392,6 +455,18 @@ class Image:
                 base=base,
                 tag=tag,
                 alias=alias
+            )
+        )
+
+        return self
+    
+    def stopsignal(
+        self,
+        signal: int
+    ):
+        self.layers.append(
+            StopSignal(
+                signal=signal
             )
         )
 

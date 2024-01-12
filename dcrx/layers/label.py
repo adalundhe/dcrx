@@ -1,3 +1,4 @@
+import re
 from pydantic import (
     BaseModel,
     StrictStr,
@@ -12,3 +13,17 @@ class Label(BaseModel):
 
     def to_string(self) -> str:
         return f'LABEL {self.name}="{self.value}"'
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str
+    ):
+        
+        line = re.sub('LABEL', '', line)
+        name, value = line.strip().split('=')
+
+        return Label(
+            name=name,
+            value=value
+        )

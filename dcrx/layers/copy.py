@@ -1,3 +1,4 @@
+import re
 from pydantic import (
     BaseModel,
     FilePath,
@@ -7,17 +8,17 @@ from pydantic import (
     constr
 )
 
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Dict
 
 
 class Copy(BaseModel):
     layer_type: Literal["copy"]="copy"
     source: Union[FilePath, DirectoryPath]
     destination: StrictStr
-    user_id: Optional[StrictStr]
-    group_id: Optional[StrictStr]
-    permissions: Optional[constr(max_length=4, pattern=r'^[0-9]*$')]
-    from_source: Optional[StrictStr]
+    user_id: Optional[StrictStr]=None
+    group_id: Optional[StrictStr]=None
+    permissions: Optional[constr(max_length=4, pattern=r'^[0-9]*$')]=None
+    from_source: Optional[StrictStr]=None
     link: StrictBool=False
 
     def to_string(self) -> str:
@@ -39,3 +40,96 @@ class Copy(BaseModel):
             copy_string = f'{copy_string} --link'
 
         return f'{copy_string} ./{self.source} {self.destination}'
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str,
+    ):
+        
+        line = re.sub('COPY', '', line)
+        tokens = line.strip('\n').split(' ')
+
+        options: Dict[str, str | bool | int] = {}
+        remainders = []
+
+        for token in tokens:
+            if re.search(
+                '--link',
+                token
+            ):
+                options['link'] = True
+
+            elif re.search(
+                '--checksum',
+                token
+            ):
+                options['checksum'] = re.sub(
+                    '--checksum=',
+                    '',
+                    token
+                )
+
+            elif re.search(
+                '--chown',
+                token
+            ):
+                token = re.sub(
+                    '--checksum=',
+                    '',
+                    token
+                )
+                
+                (
+                    user_id,
+                    group_id,
+                    permissions
+                ) = cls._match_permissions(token)
+
+                options['user_id'] = user_id
+                options['group_id'] = group_id
+                options['permissions'] = permissions
+
+            else:
+                remainders.append(token)
+
+        assert len(remainders) == 2
+
+        source, destination = remainders[0], remainders[1]
+
+        return Copy(
+            source=source,
+            destination=destination,
+            **options
+        )
+
+    @classmethod
+    def _match_permissions(
+        cls,
+        token: str
+    ):
+        if permissions := re.search(
+            r'[0-7]{4}|[0-7]{3}',
+            token
+        ):
+            return (
+                None,
+                None,
+                permissions.group(0)
+            )
+        
+        elif ':' in token:
+            user_id, group_id = token.split(':')
+
+            return (
+                user_id,
+                group_id,
+                None
+            )
+        
+        else:
+            return (
+                token,
+                None,
+                None
+            )

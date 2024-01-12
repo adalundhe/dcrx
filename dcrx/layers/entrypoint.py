@@ -1,9 +1,7 @@
+import re
 from pydantic import (
     BaseModel,
-    StrictStr,
-    StrictInt,
-    StrictBool,
-    StrictFloat
+    StrictStr
 )
 
 from typing import List, Literal
@@ -19,3 +17,22 @@ class Entrypoint(BaseModel):
         ])
         
         return f'ENTRYPOINT [{command}]'
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str
+    ):
+        
+        line = re.sub('ENTRYPOINT', '', line).strip()
+        command = [
+            arg.strip() for arg in re.sub(
+                r'\[|\]', 
+                '', 
+                line
+            ).split(',')
+        ]
+
+        return Entrypoint(
+            command=command
+        )

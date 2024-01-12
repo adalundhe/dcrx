@@ -1,10 +1,11 @@
+import re
 from pydantic import (
     BaseModel,
     StrictStr,
     StrictBool,
     constr
 )
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict
 
 
 class SecretMount(BaseModel):
@@ -39,3 +40,80 @@ class SecretMount(BaseModel):
             mount_string = f'{mount_string},gid={self.group_id}'
 
         return mount_string
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str
+    ):
+        options: Dict[str, str | bool] = {
+            'mount_type': 'secret'
+        }
+
+        tokens = line.split(',') 
+
+        for token in tokens:
+
+            if mount_id := re.search(
+                r'id=(.*)',
+                token
+            ):
+                options['id'] = re.sub(
+                    r'id=',
+                    '',
+                    mount_id.group(0)
+                )
+
+            elif target := re.search(
+                r'target=(.*)',
+                token
+            ):
+                options['target'] = re.sub(
+                    r'target=',
+                    '',
+                    target.group(0)
+                )
+
+            elif required := re.search(
+                r'required=(.*)',
+                token
+            ):
+                required_value = re.sub(
+                    r'required=',
+                    '',
+                    required.group(0)
+                )
+                options['required'] = True if required_value == 'true' else None
+            
+            elif mode := re.search(
+                r'--mode=[0-7]{4}|[0-7]{3}',
+                token
+            ):
+
+                options['mode'] = re.sub(
+                    r'[0-7]{4}|[0-7]{3}',
+                    '',
+                    mode.group(0)
+                )
+            
+            elif uid := re.search(
+                r'--uid=[0-7]{4}|[0-7]{3}',
+                token
+            ):
+                options['user_id'] = re.sub(
+                    r'[0-7]{1,4}',
+                    '',
+                    uid.group(0)
+                )
+            
+            elif gid := re.search(
+                r'--uid=[0-7]{4}|[0-7]{3}',
+                token
+            ):
+                options['group_id'] = re.sub(
+                    r'[0-7]{1,4}',
+                    '',
+                    gid.group(0)
+                )
+
+        return SecretMount(**options)

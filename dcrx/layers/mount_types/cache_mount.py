@@ -1,3 +1,4 @@
+import re
 from pydantic import (
     BaseModel,
     StrictStr,
@@ -5,7 +6,7 @@ from pydantic import (
     constr
 )
 
-from typing import Optional, Literal
+from typing import Optional, Literal, Dict
 
 
 class CacheMount(BaseModel):
@@ -16,7 +17,7 @@ class CacheMount(BaseModel):
     from_source: Optional[StrictStr]
     readonly: Optional[StrictBool]
     sharing: Literal["shared", "private", "locked"]
-    mode: Optional[constr(max_length=4, pattern=r'^[0-9]*$')]
+    mode: Optional[constr(max_length=4, pattern=r'^[0-7]*$')]
     user_id: Optional[StrictStr]
     group_id: Optional[StrictStr]
 
@@ -49,3 +50,121 @@ class CacheMount(BaseModel):
             mount_string = f'{mount_string},gid={self.group_id}'
 
         return mount_string
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str
+    ):
+        
+        lines = line.split(' ')
+        options: Dict[str, str | bool] = {
+            'mount_type': 'cache'
+        }
+
+        if 'readonly' in lines:
+            options['readonly'] = True
+            lines.remove('readonly')
+
+        elif 'ro' in lines:
+            options['readonly'] = True
+            lines.remove('ro')
+
+        tokens = line.split(',') 
+
+        for token in tokens:
+
+            if mount_id := re.search(
+                r'id=(.*)',
+                token
+            ):
+                options['id'] = re.sub(
+                    r'id=',
+                    '',
+                    mount_id.group(0)
+                )
+
+            elif target := re.search(
+                r'target=(.*)',
+                token
+            ):
+                options['target'] = re.sub(
+                    r'target=',
+                    '',
+                    target.group(0)
+                )
+
+            elif source := re.search(
+                r'source=(.*)',
+                token
+            ):
+                options['source'] = re.sub(
+                    r'source=',
+                    '',
+                    source.group(0)
+                )
+
+            elif mount_from := re.search(
+                r'from=(.*)',
+                token
+            ):
+                options['from_source'] = re.sub(
+                    r'from=',
+                    '',
+                    mount_from.group(0)
+                )
+
+            elif readonly := re.search(
+                r'readonly=(.*)',
+                token
+            ):
+                readonly_value = re.sub(
+                    r'readonly=',
+                    '',
+                    readonly.group(0)
+                )
+                options['readonly'] = True if readonly_value == 'true' else None
+            
+            elif sharing := re.search(
+                r'sharing=(shared|private|locked)',
+                token
+            ):
+                options['sharing'] = re.sub(
+                    r'shared|private|locked',
+                    '',
+                    sharing.group(0)
+                )
+            
+            elif mode := re.search(
+                r'--mode=[0-7]{4}|[0-7]{3}',
+                token
+            ):
+
+                options['mode'] = re.sub(
+                    r'[0-7]{4}|[0-7]{3}',
+                    '',
+                    mode.group(0)
+                )
+            
+            elif uid := re.search(
+                r'--uid=[0-7]{4}|[0-7]{3}',
+                token
+            ):
+                options['user_id'] = re.sub(
+                    r'[0-7]{1,4}',
+                    '',
+                    uid.group(0)
+                )
+            
+            elif gid := re.search(
+                r'--uid=[0-7]{4}|[0-7]{3}',
+                token
+            ):
+                options['group_id'] = re.sub(
+                    r'[0-7]{1,4}',
+                    '',
+                    gid.group(0)
+                )
+
+        return CacheMount(**options)
+    

@@ -1,3 +1,4 @@
+import re
 from pydantic import (
     BaseModel,
     StrictStr,
@@ -5,13 +6,13 @@ from pydantic import (
     StrictBool,
     StrictFloat
 )
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Dict
 
 
 class Arg(BaseModel):
     layer_type: Literal["arg"]="arg"
     name: StrictStr
-    default: Optional[Union[StrictStr, StrictInt, StrictBool, StrictFloat]]
+    default: Optional[Union[StrictStr, StrictInt, StrictBool, StrictFloat]]=None
 
     def to_string(self) -> str:
 
@@ -23,3 +24,30 @@ class Arg(BaseModel):
             return f'ARG {self.name}={default}'
         
         return f'ARG {self.name}'
+    
+    @classmethod
+    def parse(
+        cls,
+        line: str
+    ):
+        
+        line = re.sub('ARG', '', line)
+        token = line.strip()
+
+        options: Dict[
+            str,
+            str | int | float | bool
+        ] = {}
+
+        if '=' in token:
+            name, default = token.split('=')
+
+            options['name'] = name
+            options['default'] = default
+
+        else:
+            options['name'] = name
+
+        return Arg(
+            **options
+        )
