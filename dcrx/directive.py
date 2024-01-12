@@ -183,14 +183,33 @@ class Directives:
     def parse(
         self,
         dockerfile: str | List[str] | bytes | List[bytes]
-    ):
+    ) -> List[
+        Add |
+        Arg |
+        Cmd |
+        Copy |
+        Entrypoint |
+        Env |
+        Expose |
+        Healthcheck |
+        Label |
+        Maintainer |
+        OnBuild |
+        Run |
+        Shell |
+        Stage |
+        StopSignal |
+        User |
+        Volume | 
+        Workdir
+    ]:
         
         if isinstance(dockerfile, str):
             self._file_data.extend(
                 dockerfile.split('\n')
             )
 
-        elif isinstance(bytes):
+        elif isinstance(dockerfile, bytes):
             self._file_data.extend(
                 dockerfile.decode().split('\n')
             )

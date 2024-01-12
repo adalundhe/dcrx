@@ -30,6 +30,7 @@ from .layers import (
     Volume,
     Workdir
 )
+from .directive import Directives
 from .layers.mount_types import (
     BindMount,
     CacheMount,
@@ -96,9 +97,37 @@ class Image:
             'tmpfs': lambda config: TMPFSMount(**config)
         }
 
+        self.directives = Directives()
+
     @property
     def full_name(self):
         return f'{self.name}:{self.tag}'
+    
+    def from_string(
+        self,
+        dockerfile: str
+    ):
+        self.layers.extend(
+            self.directives.parse(dockerfile)
+        )
+
+        return self
+    
+    def from_file(
+        self,
+        filepath: str
+    ):
+        filename = pathlib.Path(filepath).name
+        self.filename = filename
+        
+        with open(filepath) as dockerfile:
+            self.layers.append(
+                self.directives.parse(
+                    dockerfile.readlines()
+                )
+            )
+
+        return self
 
     def to_string(self) -> str:
         return '\n\n'.join([
