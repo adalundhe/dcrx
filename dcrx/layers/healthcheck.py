@@ -1,24 +1,41 @@
 import re
 from pydantic import (
     BaseModel,
-    StrictInt
+    StrictInt,
+    StrictFloat
 )
-from typing import Literal, Dict
+from typing import Literal, Dict, Optional, List
 from .cmd import Cmd
 
 
 class Healthcheck(BaseModel):
     layer_type: Literal["healthcheck"]="healthcheck"
-    interval: StrictInt
-    timeout: StrictInt
-    start_period: StrictInt
-    retries: StrictInt
+    interval: Optional[StrictInt | StrictFloat]=None
+    timeout: Optional[StrictInt| StrictFloat]=None
+    start_period: Optional[StrictInt | StrictFloat]=None
+    retries: Optional[StrictInt | StrictFloat]=None
     command: Cmd
 
     def to_string(self) -> str:
         command = self.command.to_string()
+        timings: List[str] = []
 
-        timings = f'--interval={self.interval}s --timeout={self.timeout}s --start-period={self.start_period}s'
+        if self.interval:
+            timings.append(
+                f'--interval={self.interval}s'
+            )
+        
+        if self.timeout:
+            timings.append(
+                f'--timeout={self.timeout}s'
+            )
+
+        if self.start_period:
+            timings.append(
+                f'--start-period={self.start_period}s'
+            )
+
+        timings = ' '.join(timings)
 
         return f'HEALTHCHECK {timings} --retries={self.retries} {command}'
     

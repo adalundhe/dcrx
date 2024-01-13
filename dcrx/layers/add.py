@@ -44,7 +44,7 @@ class Add(BaseModel):
         line: str,
     ):
         
-        line = re.sub('ADD', '', line)
+        line = re.sub('ADD', '', line).strip()
         tokens = line.strip('\n').split(' ')
 
         options: Dict[str, str | bool | int] = {}
@@ -90,9 +90,12 @@ class Add(BaseModel):
             else:
                 remainders.append(token)
 
-        assert len(remainders) == 2
+        if len(remainders) > 2:
+            destination = remainders.pop()
+            source = ' '.join(remainders)
 
-        source, destination = remainders[0], remainders[1]
+        else:
+            source, destination = remainders[0], remainders[1]
 
         return Add(
             source=source,

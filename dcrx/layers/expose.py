@@ -2,6 +2,7 @@ import re
 from pydantic import (
     BaseModel,
     StrictInt,
+    StrictStr,
     conlist
 )
 
@@ -10,7 +11,7 @@ from typing import Literal, List
 
 class Expose(BaseModel):
     layer_type: Literal["expose"]="expose"
-    ports: conlist(StrictInt, min_length=1)
+    ports: conlist(StrictInt | StrictStr, min_length=1)
 
     def to_string(self):
         exposed_ports = ' '.join([
@@ -30,12 +31,17 @@ class Expose(BaseModel):
 
         for token in tokens:
             if port := re.search(
-                r'[0-9]{4,5}',
+                r'[0-9]{*}',
                 token
             ):
                 ports.append(
                     int(port.group(0))
                 )
+
+        if len(ports) < 1:
+            ports.append(
+                line
+            )
 
         return Expose(
             ports=ports

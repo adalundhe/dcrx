@@ -39,7 +39,12 @@ class Stage(BaseModel):
                 line
             )
 
-        base, tag = line.split(':')
+        if ':' in line:
+            base, tag = line.split(':')
+
+        else:
+            base = line
+            tag = 'latest'
 
         return Stage(
             base=base,

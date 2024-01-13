@@ -3,9 +3,11 @@ from pydantic import (
     BaseModel,
     StrictInt
 )
+from typing import Literal
 
 
 class StopSignal(BaseModel):
+    layer_type: Literal['stopsignal']='stopsignal'
     signal: StrictInt
 
     def to_string(self):

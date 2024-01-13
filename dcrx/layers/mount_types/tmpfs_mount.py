@@ -10,7 +10,7 @@ from typing import Optional, Literal, Dict
 class TMPFSMount(BaseModel):
     mount_type: Literal["tmpfs"]="tmpfs"
     target: StrictStr
-    size: Optional[StrictInt]
+    size: Optional[StrictInt]=None
 
     def to_string(self) -> str:
         mount_string = f'--mount=type={self.mount_type},target={self.target}'

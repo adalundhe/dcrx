@@ -10,12 +10,12 @@ from typing import Optional, Literal, Dict
 
 class SSHMount(BaseModel):
     mount_type: Literal["ssh"]="ssh"
-    id: Optional[StrictStr]
-    target: Optional[StrictStr]
-    required: Optional[StrictBool]
-    mode: Optional[constr(max_length=4, pattern=r'^[0-9]*$')]
-    user_id: Optional[StrictStr]
-    group_id: Optional[StrictStr]
+    id: Optional[StrictStr]=None
+    target: Optional[StrictStr]=None
+    required: Optional[StrictBool]=None
+    mode: Optional[constr(max_length=4, pattern=r'^[0-9]*$')]=None
+    user_id: Optional[StrictStr]=None
+    group_id: Optional[StrictStr]=None
 
     def to_string(self) -> str:
         mount_string = f"--mount=type={self.mount_type}"

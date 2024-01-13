@@ -6,10 +6,11 @@ from pydantic import (
     StrictBool,
     StrictFloat
 )
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 
 class Shell(BaseModel):
+    layer_type: Literal['shell']='shell'
     executable: StrictStr
     parameters: Optional[
         List[

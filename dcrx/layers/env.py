@@ -6,34 +6,85 @@ from pydantic import (
     StrictBool,
     StrictFloat
 )
-from typing import Union, Literal
+from typing import Union, Literal, List
 
 
 class Env(BaseModel):
     layer_type: Literal["env"]="env"
-    key: StrictStr
-    value: Union[StrictStr, StrictInt, StrictBool, StrictFloat]
+    keys: List[StrictStr]
+    values: List[
+        StrictStr | StrictInt | StrictBool | StrictFloat
+    ]
 
     def to_string(self) -> str:
+        key_value_pairs: List[str] = []
+        for key, value in zip(self.keys, self.values):
 
-        value = self.value
-        if isinstance(value, str):
-            value = f'"{value}"'
+            if isinstance(value, str):
+                value = f'"{value}"'
 
-        return f'ENV {self.key}={value}'
-    
+            key_value_pairs.append(f'{key}={value}')
+
+        key_value_string = '\ \n\t'.join(key_value_pairs)
+        return f'ENV {key_value_string}'
+        
     @classmethod
     def parse(
         cls,
         line: str
     ):
         
-        line = re.sub('ENV', '', line)
-        token = line.strip()
+        line = re.sub('ENV', '', line).strip()
 
-        key, value = token.split('=')
+        tokens = [
+            token.strip(
+                '\\'
+            ).strip() for token in line.split() if len(token) > 0
+        ]
+
+        keys: List[str] = []
+        values: List[str] = []
+
+        last_name: str = None
+
+        for token in tokens:
+
+            key, value = None, None
+            
+            if '=' in token:
+                key, value = token.split('=')
+
+            else:
+
+                if len(token.split()) != 2 and last_name is None and len(token) > 0:
+                    last_name = token.strip()
+
+                
+                elif len(token.split()) != 2 and last_name and len(token) > 0:
+                    key = last_name
+                    value = token.strip()
+                    last_name = None
+
+                else:
+
+                    try:
+
+                        key, value = token.split()
+
+                    except Exception:
+                        pass
+
+            if key and value:
+                keys.append(
+                    key.strip()
+                )
+
+                values.append(
+                    value.strip()
+                )
+
 
         return Env(
-            key=key,
-            value=value
+            keys=keys,
+            values=values
         )

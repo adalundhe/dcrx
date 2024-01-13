@@ -47,7 +47,7 @@ class Copy(BaseModel):
         line: str,
     ):
         
-        line = re.sub('COPY', '', line)
+        line = re.sub('COPY', '', line).strip()
         tokens = line.strip('\n').split(' ')
 
         options: Dict[str, str | bool | int] = {}

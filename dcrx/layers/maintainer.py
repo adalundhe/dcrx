@@ -3,9 +3,11 @@ from pydantic import (
     BaseModel,
     StrictStr
 )
+from typing import Literal
 
 
 class Maintainer(BaseModel):
+    layer_type: Literal['maintainer']='maintainer'
     author: StrictStr
 
     def to_string(self):

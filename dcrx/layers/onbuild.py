@@ -21,6 +21,7 @@ from .workdir import Workdir
 
 
 class OnBuild(BaseModel):
+    layer_type: Literal['onbuild']='onbuild'
     instruction: (
         Add | 
         Arg | 

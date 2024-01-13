@@ -136,6 +136,7 @@ class Directives:
             '|'.join(self._directive_names)
         )
         self._file_data: List[str] = []
+        self._docker_file_lines: List[str] = []
 
     def __iter__(self):
         for directive_name in self._directives:
@@ -220,13 +221,20 @@ class Directives:
                     line = line.decode()
 
                 self._file_data.append(line)
+
+        self._file_data = [
+            line for line in self._file_data if not line.strip().startswith('#') and len(line) > 0
+        ]
         
-        docker_file_lines = []
-        current_line = self._file_data[0]
+        self._docker_file_lines: List[str] = []
+
+        current_line = ''
+        if len(self._file_data) > 0:
+            current_line = self._file_data[0]
 
         for line in self._file_data[1:]:
             if self.from_file_line(line):
-                docker_file_lines.append(
+                self._docker_file_lines.append(
                     str(current_line)
                 )
                 current_line = line
@@ -234,8 +242,10 @@ class Directives:
             else:
                 current_line += line
 
+        self._docker_file_lines.append(current_line)
+
         docker_directives = []
-        for docker_file_line in docker_file_lines:
+        for docker_file_line in self._docker_file_lines:
             if directive := self.parse_directive(docker_file_line):
                 docker_directives.append(directive)
 

@@ -141,9 +141,11 @@ class Image:
                 )
             )
 
-            image_source: Stage = [
+            image_sources: Stage = [
                 layer for layer in layers if layer.layer_type == 'stage'
-            ][-1]
+            ]
+
+            image_source = image_sources[-1]
 
             image = Image(
                 image_source.base,
@@ -190,10 +192,17 @@ class Image:
             )
         )
 
-        image_source: Stage = [
+        image_sources: List[Stage] = [
             layer for layer in layers if layer.layer_type == 'stage'
-        ][-1]
-        
+        ]
+
+        if len(image_sources) < 1:
+            return Image(
+                'Unknown'
+            )
+
+        image_source = image_sources[-1]
+
         image = Image(
             image_source.base,
             tag=image_source.tag,
@@ -203,6 +212,7 @@ class Image:
         image.layers = layers
 
         return image
+        
     
     def from_string(
         self,
@@ -410,18 +420,33 @@ class Image:
     
     def env(
         self,
-        key: str,
-        value: Union[
-            str,
-            int,
-            bool,
-            float
-        ]
+        keys: str | List[str],
+        values: 
+            str |
+            int |
+            bool |
+            float |
+            List[
+                str |
+                int |
+                bool |
+                float
+            ]
     ):
+        
+        if isinstance(
+            keys, (str, int, bool, float)
+        ) and isinstance(
+            values,
+            (str, int, bool, float)
+        ):
+            keys = [keys]
+            values = [values]
+
         self.layers.append(
             Env(
-                key=key,
-                value=value
+                keys=keys,
+                values=values
             )
         )
 

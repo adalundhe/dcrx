@@ -11,15 +11,15 @@ from typing import Optional, Literal, Dict
 
 class CacheMount(BaseModel):
     mount_type: Literal["cache"]="cache"
-    id: StrictStr
+    id: Optional[StrictStr]=None
     target: StrictStr
-    source: Optional[StrictStr]
-    from_source: Optional[StrictStr]
-    readonly: Optional[StrictBool]
-    sharing: Literal["shared", "private", "locked"]
-    mode: Optional[constr(max_length=4, pattern=r'^[0-7]*$')]
-    user_id: Optional[StrictStr]
-    group_id: Optional[StrictStr]
+    source: Optional[StrictStr]=None
+    from_source: Optional[StrictStr]=None
+    readonly: Optional[StrictBool]=None
+    sharing: Literal["shared", "private", "locked"]=None
+    mode: Optional[constr(max_length=4, pattern=r'^[0-7]*$')]=None
+    user_id: Optional[StrictStr]=None
+    group_id: Optional[StrictStr]=None
 
     def to_string(self) -> str:
         mount_string = f'--mount=type={self.mount_type},target={self.target}'
@@ -56,7 +56,6 @@ class CacheMount(BaseModel):
         cls,
         line: str
     ):
-        
         lines = line.split(' ')
         options: Dict[str, str | bool] = {
             'mount_type': 'cache'
@@ -129,11 +128,10 @@ class CacheMount(BaseModel):
                 r'sharing=(shared|private|locked)',
                 token
             ):
-                options['sharing'] = re.sub(
+                options['sharing'] = re.search(
                     r'shared|private|locked',
-                    '',
                     sharing.group(0)
-                )
+                ).group(0)
             
             elif mode := re.search(
                 r'--mode=[0-7]{4}|[0-7]{3}',

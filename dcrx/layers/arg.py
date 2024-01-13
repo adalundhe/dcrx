@@ -46,7 +46,7 @@ class Arg(BaseModel):
             options['default'] = default
 
         else:
-            options['name'] = name
+            options['name'] = token
 
         return Arg(
             **options

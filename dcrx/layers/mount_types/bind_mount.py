@@ -11,9 +11,9 @@ from typing import Optional, Literal, Dict
 class BindMount(BaseModel):
     mount_type: Literal["bind"]="bind"
     target: StrictStr
-    source: Optional[StrictStr]
-    from_source: Optional[StrictStr]
-    readwrite: Optional[StrictBool]
+    source: Optional[StrictStr]=None
+    from_source: Optional[StrictStr]=None
+    readwrite: Optional[StrictBool]=None
 
     def to_string(self) -> str:
         mount_string = f'--mount=type={self.mount_type},target={self.target}'
