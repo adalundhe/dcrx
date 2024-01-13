@@ -93,10 +93,13 @@ class Copy(BaseModel):
             else:
                 remainders.append(token)
 
-        assert len(remainders) == 2
+        if len(remainders) > 2:
+            destination = remainders.pop()
+            source = ' '.join(remainders)
 
-        source, destination = remainders[0], remainders[1]
-
+        else:
+            source, destination = remainders[0], remainders[1]
+            
         return Copy(
             source=source,
             destination=destination,
