@@ -135,7 +135,7 @@ class Image:
         filename = pathlib.Path(filepath).name
 
         with open(filepath) as dockerfile:
-            layers.append(
+            layers.extend(
                 directives.parse(
                     dockerfile.readlines()
                 )
@@ -184,7 +184,7 @@ class Image:
 
         directives = Directives()
 
-        layers.append(
+        layers.extend(
             directives.parse(
                 dockerfile
             )

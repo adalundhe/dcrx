@@ -13,7 +13,7 @@ from typing import Union, Optional, Literal, Dict
 
 class Copy(BaseModel):
     layer_type: Literal["copy"]="copy"
-    source: Union[FilePath, DirectoryPath]
+    source: Union[FilePath, DirectoryPath, StrictStr]
     destination: StrictStr
     user_id: Optional[StrictStr]=None
     group_id: Optional[StrictStr]=None
@@ -99,7 +99,7 @@ class Copy(BaseModel):
 
         else:
             source, destination = remainders[0], remainders[1]
-            
+
         return Copy(
             source=source,
             destination=destination,
