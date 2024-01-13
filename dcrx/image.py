@@ -145,12 +145,8 @@ class Image:
                 layer for layer in layers if layer.layer_type == 'stage'
             ][-1]
 
-            image_name = image_source.alias
-            if image_name is None:
-                image_name = image_source.base
-
             image = Image(
-                image_name,
+                image_source.base,
                 tag=image_source.tag,
                 filename=filename
             )
@@ -197,13 +193,9 @@ class Image:
         image_source: Stage = [
             layer for layer in layers if layer.layer_type == 'stage'
         ][-1]
-
-        image_name = image_source.alias
-        if image_name is None:
-            image_name = image_source.base
-
+        
         image = Image(
-            image_name,
+            image_source.base,
             tag=image_source.tag,
             filename=filename
         )
