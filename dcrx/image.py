@@ -59,22 +59,24 @@ class Image:
 
         self.filename = filename
         self.layers: List[
-            Union[
-                Arg,
-                Cmd,
-                Copy,
-                Entrypoint,
-                Env,
-                Expose,
-                Healthcheck,
-                Maintainer,
-                OnBuild,
-                Run,
-                Shell,
-                Stage,
-                StopSignal,
-                Workdir
-            ]
+            Add |
+            Arg |
+            Cmd |
+            Copy |
+            Entrypoint |
+            Env |
+            Expose |
+            Healthcheck |
+            Label |
+            Maintainer |
+            OnBuild |
+            Run |
+            Shell |
+            Stage |
+            StopSignal |
+            User |
+            Volume | 
+            Workdir
         ] = []
 
         self._mount_types: Dict[
@@ -103,6 +105,113 @@ class Image:
     def full_name(self):
         return f'{self.name}:{self.tag}'
     
+    @classmethod
+    def load_image_from_file(
+        cls,
+        filepath: str
+    ):
+        layers: List[
+            Add |
+            Arg |
+            Cmd |
+            Copy |
+            Entrypoint |
+            Env |
+            Expose |
+            Healthcheck |
+            Label |
+            Maintainer |
+            OnBuild |
+            Run |
+            Shell |
+            Stage |
+            StopSignal |
+            User |
+            Volume | 
+            Workdir
+        ] = []
+
+        directives = Directives()
+        filename = pathlib.Path(filepath).name
+
+        with open(filepath) as dockerfile:
+            layers.append(
+                directives.parse(
+                    dockerfile.readlines()
+                )
+            )
+
+            image_source: Stage = [
+                layer for layer in layers if layer.layer_type == 'stage'
+            ][-1]
+
+            image_name = image_source.alias
+            if image_name is None:
+                image_name = image_source.base
+
+            image = Image(
+                image_name,
+                tag=image_source.tag,
+                filename=filename
+            )
+
+            image.layers = layers
+
+            return image
+
+    @classmethod
+    def load_image_from_string(
+        cls,
+        dockerfile: str | bytes | List[str] | List[bytes],
+        filename: Optional[str]=None
+    ):
+        layers: List[
+            Add |
+            Arg |
+            Cmd |
+            Copy |
+            Entrypoint |
+            Env |
+            Expose |
+            Healthcheck |
+            Label |
+            Maintainer |
+            OnBuild |
+            Run |
+            Shell |
+            Stage |
+            StopSignal |
+            User |
+            Volume | 
+            Workdir
+        ] = []
+
+        directives = Directives()
+
+        layers.append(
+            directives.parse(
+                dockerfile
+            )
+        )
+
+        image_source: Stage = [
+            layer for layer in layers if layer.layer_type == 'stage'
+        ][-1]
+
+        image_name = image_source.alias
+        if image_name is None:
+            image_name = image_source.base
+
+        image = Image(
+            image_name,
+            tag=image_source.tag,
+            filename=filename
+        )
+
+        image.layers = layers
+
+        return image
+    
     def from_string(
         self,
         dockerfile: str
@@ -119,7 +228,7 @@ class Image:
     ):
         filename = pathlib.Path(filepath).name
         self.filename = filename
-        
+
         with open(filepath) as dockerfile:
             self.layers.append(
                 self.directives.parse(
