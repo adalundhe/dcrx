@@ -588,29 +588,54 @@ class Image:
                                 resolved_args.get(arg.name)
                             )
 
-
             for env in env_layers:
                 for key, value in zip(env.keys, env.values):
-                    if isinstance(
-                        field_value,
+
+                    is_replaceable_string = isinstance(
+                        field_value, 
                         str
-                    ) and key in field_value and value:
+                    ) and key in field_value and value
+
+                    is_braced_arg = is_replaceable_string and field_value.startswith(
+                        '${'
+                    ) and field_value.endswith('}')
+
+                    if is_replaceable_string and is_braced_arg:
                         model_data[field] = field_value.replace(
                             '${' + key + '}',
                             resolved_args.get(key)
                         )
-
+                    
+                    elif is_replaceable_string:
+                        model_data[field] = field_value.replace(
+                            '$' + key,
+                            resolved_args.get(key)
+                        )
+                        
                     elif isinstance(
                         field_value,
                         list
                     ):
                         for idx, value_item in enumerate(field_value):
-                            if isinstance(
+
+                            is_replaceable_string = isinstance(
                                 value_item, 
                                 str
-                            ) and arg.name in value_item and arg.default:
+                            ) and key in value_item and value
+
+                            is_braced_arg = is_replaceable_string and value_item.startswith(
+                                '${'
+                            ) and value_item.endswith('}')
+                            
+                            if is_replaceable_string and is_braced_arg:
                                 model_data[field][idx] = value_item.replace(
-                                    '${' + arg.name + '}',
+                                    '${' + key + '}',
+                                    resolved_args.get(arg.name)
+                                )
+
+                            elif is_replaceable_string:
+                                model_data[field][idx] = value_item.replace(
+                                    '$' + key,
                                     resolved_args.get(arg.name)
                                 )
 
