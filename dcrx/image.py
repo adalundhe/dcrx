@@ -587,9 +587,6 @@ class Image:
                                 '$' + arg.name,
                                 resolved_args.get(arg.name)
                             )
-                else:
-                    print(field, arg.name, field_value)
-
 
 
             for env in env_layers:
