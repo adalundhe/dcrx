@@ -18,7 +18,7 @@ class Workdir(BaseModel):
         line: str
     ):
         
-        line = re.sub('WORKDIR', '', line).strip()
+        line = re.sub('WORKDIR ', '', line, count=1).strip()
         return Workdir(
             path=line
         )

@@ -34,7 +34,7 @@ class Env(BaseModel):
         line: str
     ):
         
-        line = re.sub('ENV', '', line).strip()
+        line = re.sub('ENV ', '', line, count=1).strip()
 
         tokens = [
             token.strip(

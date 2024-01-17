@@ -47,7 +47,7 @@ class Copy(BaseModel):
         line: str,
     ):
         
-        line = re.sub('COPY', '', line).strip()
+        line = re.sub('COPY ', '', line, count=1).strip()
         tokens = line.strip('\n').split(' ')
 
         options: Dict[str, str | bool | int] = {}
@@ -66,6 +66,16 @@ class Copy(BaseModel):
             ):
                 options['checksum'] = re.sub(
                     '--checksum=',
+                    '',
+                    token
+                )
+
+            elif re.search(
+                '--from',
+                token
+            ):
+                options['from_source'] = re.sub(
+                    '--from=',
                     '',
                     token
                 )

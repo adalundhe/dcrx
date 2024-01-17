@@ -24,7 +24,7 @@ class Expose(BaseModel):
         cls,
         line: str
     ):
-        line = re.sub('EXPOSE', '', line).strip()
+        line = re.sub('EXPOSE ', '', line, count=1).strip()
         ports: List[str] = []
 
         tokens = line.split(' ')

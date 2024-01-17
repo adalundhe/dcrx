@@ -1,6 +1,7 @@
 import os
 import tarfile
 import pathlib
+import re
 from typing import (
     List, 
     Union, 
@@ -8,7 +9,8 @@ from typing import (
     Callable,
     Dict,
     Any,
-    Literal
+    Literal,
+    Tuple
 )
 from .layers import (
     Add,
@@ -39,6 +41,7 @@ from .layers.mount_types import (
     TMPFSMount
 )
 from .memory_file import MemoryFile
+from .queries import LayerQuery
 
 
 class Image:
@@ -47,10 +50,12 @@ class Image:
         self,
         name: str,
         tag: str="latest",
-        filename: str=None
+        filename: Optional[str]=None,
+        path: Optional[str]=None
     ) -> None:
         self.name = name
         self.tag = tag
+        self.path = path
         self.files: List[str] = []
 
         if filename is None:
@@ -58,7 +63,7 @@ class Image:
             filename = f'Dockerfile.{stub}'
 
         self.filename = filename
-        self.layers: List[
+        self._layers: List[
             Add |
             Arg |
             Cmd |
@@ -105,10 +110,15 @@ class Image:
     def full_name(self):
         return f'{self.name}:{self.tag}'
     
+    def __iter__(self):
+        for layer in self._layers:
+            yield layer
+    
     @classmethod
     def load_image_from_file(
         cls,
-        filepath: str
+        filepath: str,
+        path: Optional[str]=None
     ):
         layers: List[
             Add |
@@ -145,15 +155,16 @@ class Image:
                 layer for layer in layers if layer.layer_type == 'stage'
             ]
 
-            image_source = image_sources[-1]
+            image_source: Stage = image_sources[-1]
 
             image = Image(
                 image_source.base,
                 tag=image_source.tag,
-                filename=filename
+                filename=filename,
+                path=path
             )
 
-            image.layers = layers
+            image.from_layers(layers)
 
             return image
 
@@ -161,7 +172,8 @@ class Image:
     def load_image_from_string(
         cls,
         dockerfile: str | bytes | List[str] | List[bytes],
-        filename: Optional[str]=None
+        filename: Optional[str]=None,
+        path: Optional[str]=None
     ):
         layers: List[
             Add |
@@ -198,7 +210,8 @@ class Image:
 
         if len(image_sources) < 1:
             return Image(
-                'Unknown'
+                'Unknown',
+                path=path
             )
 
         image_source = image_sources[-1]
@@ -206,19 +219,19 @@ class Image:
         image = Image(
             image_source.base,
             tag=image_source.tag,
-            filename=filename
+            filename=filename,
+            path=path
         )
 
-        image.layers = layers
+        image.from_layers(layers)
 
         return image
-        
     
     def from_string(
         self,
         dockerfile: str
     ):
-        self.layers.extend(
+        self._layers.extend(
             self.directives.parse(dockerfile)
         )
 
@@ -232,17 +245,451 @@ class Image:
         self.filename = filename
 
         with open(filepath) as dockerfile:
-            self.layers.append(
+            self._layers.extend(
                 self.directives.parse(
                     dockerfile.readlines()
                 )
             )
 
         return self
+    
+    def from_layers(
+        self,
+        layers: List[
+            Add |
+            Arg |
+            Cmd |
+            Copy |
+            Entrypoint |
+            Env |
+            Expose |
+            Healthcheck |
+            Label |
+            Maintainer |
+            OnBuild |
+            Run |
+            Shell |
+            Stage |
+            StopSignal |
+            User |
+            Volume | 
+            Workdir
+        ] = []
+    ):
+        self._layers = layers
+
+        return self
+
+    def layers(
+        self,
+        layer_types: Optional[
+            Literal[
+                'add',
+                'arg',
+                'cmd',
+                'copy',
+                'entrypoint',
+                'env',
+                'expose',
+                'healthcheck',
+                'label',
+                'maintainer',
+                'onbuild',
+                'run',
+                'shell',
+                'stage',
+                'stopsignal',
+                'user',
+                'volume', 
+                'workdir'
+            ] | List[
+                Literal[
+                    'add',
+                    'arg',
+                    'cmd',
+                    'copy',
+                    'entrypoint',
+                    'env',
+                    'expose',
+                    'healthcheck',
+                    'label',
+                    'maintainer',
+                    'onbuild',
+                    'run',
+                    'shell',
+                    'stage',
+                    'stopsignal',
+                    'user',
+                    'volume', 
+                    'workdir'
+                ]
+            ]
+        ] = None,
+        attribute: Optional[
+            Tuple[
+                str,
+                Any
+            ]
+        ]=None
+    ):
+        
+        if layer_types is not None and not isinstance(layer_types, list):
+            layer_types = [layer_types]
+        
+        if isinstance(layer_types, list):
+            layers = []
+            for layer_type in layer_types:
+                layers.extend([
+                    layer for layer in self._layers if layer.layer_type == layer_type
+                ])
+
+            return LayerQuery(layers)
+
+        if attribute:
+            attribute_name, attribute_value = attribute
+            layers = LayerQuery(self._layers)
+            return layers.get(
+                attribute_name,
+                attribute_value
+            )
+        
+        return LayerQuery(self._layers)
+    
+    def resolve(self):
+        resolved_args = self.get_resolved_args()
+
+        layers = list(self._layers)
+
+        for idx, layer in enumerate(layers):
+            if isinstance(layer, Arg):
+                layer_data = layer.model_dump()
+                layer_data['default'] = resolved_args.get(
+                    layer.name,
+                    layer.default
+                )
+
+                layers[idx] = Arg(**layer_data)
+
+            elif isinstance(layer, Env):
+                values = []
+                for key_idx, key in layer.keys:
+                    values.append(
+                        resolved_args.get(
+                            key,
+                            layer.values[key_idx]
+                        )
+                    )
+
+                layer_data = layer.model_dump()
+                layer_data['values'] = values
+                layers[idx] = Env(**layer_data)
+
+        image = Image(
+            self.name,
+            tag=self.tag,
+            filename=self.filename,
+            path=self.path
+        )
+
+        image.from_layers(layers)
+
+        arg_layers = image.layers(layer_types='arg')
+        env_layers = image.layers(layer_types='env')
+
+        resolved_layers: List[
+            Add |
+            Arg |
+            Cmd |
+            Copy |
+            Entrypoint |
+            Env |
+            Expose |
+            Healthcheck |
+            Label |
+            Maintainer |
+            OnBuild |
+            Run |
+            Shell |
+            Stage |
+            StopSignal |
+            User |
+            Volume | 
+            Workdir
+        ] = []
+
+        for layer in image:
+            if not isinstance(layer, (Arg, Env)):
+                layer = self._resolve_layer(
+                    layer,
+                    arg_layers,
+                    env_layers,
+                    resolved_args
+                )
+
+            resolved_layers.append(layer)
+
+        image.from_layers(resolved_layers)
+
+        return image
+
+    def get_resolved_args(self):
+
+        arg_values: Dict[str, Any] = {}
+        arg_layers = self.layers(layer_types='arg')
+        for arg in arg_layers:
+
+            arg_name = re.sub(
+                r'\$|\{|\}',
+                '',
+                arg.name
+            )
+
+            if arg_values.get(arg_name) is None:
+                arg_values[arg_name] = arg.default
+        
+        resolved_args: Dict[str, Any] = {}
+        for arg_name in arg_values:
+            resolved_args[arg_name] = self._reduce_args(
+                arg_name,
+                arg_values
+            )
+
+        
+        for arg_name, value in resolved_args.items():
+            if value:
+                for match in re.finditer(
+                    r'(\$\{)([^\}]+)\}|(\$)([\w]+)',
+                    value
+                ):
+                    if isinstance(match, re.Match):
+                        arg_variable = re.sub(
+                            r'\$|\{|\}',
+                            '',
+                            match.group(0)   
+                        )
+                        arg_value = resolved_args.get(arg_variable)
+                        if arg_value:
+                            value = re.sub(
+                                match.group(0),
+                                arg_value,
+                                value
+                            )
+
+                    resolved_args[arg_name] = value
+
+        env_values: Dict[str, Any] = {}
+        env_layers = self.layers(layer_types='env')
+        for env in env_layers:
+            for key, value in zip(env.keys, env.values):
+                if env_values.get(key):
+                    for match in re.finditer(
+                        r'(\$\{)([^\}]+)\}|(\$)([\w]+)',
+                        value
+                    ):
+                        if isinstance(match, re.Match):
+                            envar_variable = re.sub(
+                                r'\$|\{|\}',
+                                '',
+                                match.group(0)   
+                            )
+
+                            arg_value = resolved_args.get(envar_variable)
+                            if arg_value:
+                                value = arg_value
+
+                env_values[key] = value
+            
+        resolved_args.update(env_values)
+
+        for arg_name, value in resolved_args.items():
+            resolved_args.update(
+                self._resolve_args(
+                    arg_name,
+                    value,
+                    resolved_args
+                )
+            )
+
+        return resolved_args
+    
+    def _resolve_layer(
+        self,
+        layer: (
+            Add |
+            Cmd |
+            Copy |
+            Entrypoint |
+            Expose |
+            Healthcheck |
+            Label |
+            Maintainer |
+            OnBuild |
+            Run |
+            Shell |
+            Stage |
+            StopSignal |
+            User |
+            Volume | 
+            Workdir
+        ),
+        arg_layers: List[Arg],
+        env_layers: List[Env],
+        resolved_args: Dict[str, Any]
+    ):
+        model_data = layer.model_dump()
+        for field, field_value in model_data.items():
+            for arg in arg_layers:
+                
+                is_replaceable_string = isinstance(
+                    field_value, 
+                    str
+                ) and arg.name in field_value and arg.default
+
+                is_braced_arg = is_replaceable_string and field_value.startswith(
+                    '${'
+                ) and field_value.endswith('}')
+
+                if is_replaceable_string and is_braced_arg:
+                    model_data[field] = field_value.replace(
+                        '${' + arg.name + '}',
+                        resolved_args.get(arg.name)
+                    )
+                
+                elif is_replaceable_string:
+                    model_data[field] = field_value.replace(
+                        '$' + arg.name,
+                        resolved_args.get(arg.name)
+                    )
+
+
+                elif isinstance(
+                    field_value,
+                    list
+                ):
+                    for idx, value_item in enumerate(field_value):
+
+                        is_replaceable_string = isinstance(
+                            value_item, 
+                            str
+                        ) and arg.name in value_item and arg.default
+
+                        is_braced_arg = is_replaceable_string and value_item.startswith(
+                            '${'
+                        ) and value_item.endswith('}')
+
+                        if is_replaceable_string and is_braced_arg:
+                            model_data[field][idx] = value_item.replace(
+                                '${' + arg.name + '}',
+                                resolved_args.get(arg.name)
+                            )
+                        elif is_replaceable_string:
+                            model_data[field] = value_item.replace(
+                                '$' + arg.name,
+                                resolved_args.get(arg.name)
+                            )
+                else:
+                    print(field, arg.name, field_value)
+
+
+
+            for env in env_layers:
+                for key, value in zip(env.keys, env.values):
+                    if isinstance(
+                        field_value,
+                        str
+                    ) and key in field_value and value:
+                        model_data[field] = field_value.replace(
+                            '${' + key + '}',
+                            resolved_args.get(key)
+                        )
+
+                    elif isinstance(
+                        field_value,
+                        list
+                    ):
+                        for idx, value_item in enumerate(field_value):
+                            if isinstance(
+                                value_item, 
+                                str
+                            ) and arg.name in value_item and arg.default:
+                                model_data[field][idx] = value_item.replace(
+                                    '${' + arg.name + '}',
+                                    resolved_args.get(arg.name)
+                                )
+
+        return layer.model_copy(
+            update=model_data
+        )
+
+    def _reduce_args(
+        self,
+        arg_name: str,
+        args: Dict[str, Any]
+    ):
+        arg_value = args.get(arg_name)
+    
+        if arg_value in args:
+            return self._reduce_args(
+                arg_value,
+                args
+            )
+        
+        return arg_value
+    
+    def _resolve_args(
+        self,
+        arg_name: str,
+        value: str,
+        resolved: Dict[str, str]
+    ):
+        if value is None:
+            return resolved
+        
+        resolved_items = [
+            (
+                resolved_name, 
+                resolved_value
+            ) for resolved_name, resolved_value in resolved.items() if resolved_value and resolved_value != value 
+        ]
+
+        for resolved_arg, resolved_value in resolved_items:
+            for match in re.finditer(
+                r'(\$)([\w]+)',
+                resolved_value
+            ):
+                match_key = re.sub(
+                    r'\$|',
+                    '',
+                    match.group(0)
+                )
+
+                if arg_name == match_key:
+                    resolved[resolved_arg] = resolved_value.replace(
+                        match.group(0),
+                        value
+                    )
+
+            for match in re.finditer(
+                r'(\$\{)([\w]+)(\})',
+                resolved_value
+            ):
+                match_key = re.sub(
+                    r'\$|\{|\}',
+                    '',
+                    match.group(0)
+                )
+
+                if arg_name == match_key:
+                    resolved[resolved_arg] = resolved_value.replace(
+                        match.group(0),
+                        value
+                    )
+
+        return resolved
 
     def to_string(self) -> str:
         return '\n\n'.join([
-            layer.to_string() for layer in self.layers
+            layer.to_string().strip('\n') for layer in self._layers
         ])
     
     def to_context(self) -> MemoryFile:
@@ -313,7 +760,7 @@ class Image:
     def clear(self):
         if os.path.exists(self.filename):
             os.remove(self.filename)
-            self.layers.clear()
+            self._layers.clear()
     
     def add(
         self,
@@ -325,7 +772,7 @@ class Image:
         checksum: Optional[str]=None,
         link: bool=False
     ):
-        self.layers.append(
+        self._layers.append(
             Add(
                 source=source,
                 destination=destination,
@@ -349,7 +796,7 @@ class Image:
             float
         ]
     ):
-        self.layers.append(
+        self._layers.append(
             Arg(
                 name=name,
                 default=default
@@ -370,7 +817,7 @@ class Image:
         ]
     ):
         
-        self.layers.append(
+        self._layers.append(
             Cmd(
                 command=command
             )
@@ -398,7 +845,7 @@ class Image:
             link=link
         )
 
-        self.layers.append(copy_layer)
+        self._layers.append(copy_layer)
 
         self.files.append(
             f'./{copy_layer.source}'
@@ -410,7 +857,7 @@ class Image:
         self,
         command: List[str]
     ):
-        self.layers.append(
+        self._layers.append(
             Entrypoint(
                 command=command
             )
@@ -443,7 +890,7 @@ class Image:
             keys = [keys]
             values = [values]
 
-        self.layers.append(
+        self._layers.append(
             Env(
                 keys=keys,
                 values=values
@@ -454,7 +901,7 @@ class Image:
         self,
         ports: List[int]
     ):
-        self.layers.append(
+        self._layers.append(
             Expose(
                 ports=ports
             )
@@ -477,7 +924,7 @@ class Image:
             ]
         ]
     ):
-        self.layers.append(
+        self._layers.append(
             Healthcheck(
                 interval=interval,
                 timeout=timeout,
@@ -496,7 +943,7 @@ class Image:
         name: str,
         value: str
     ):
-        self.layers.append(
+        self._layers.append(
             Label(
                 name=name,
                 value=value
@@ -509,7 +956,7 @@ class Image:
         self,
         author: str
     ):
-        self.layers.append(
+        self._layers.append(
             Maintainer(
                 author=author
             )
@@ -537,7 +984,7 @@ class Image:
             Workdir
         )
     ):
-        self.layers.append(
+        self._layers.append(
             OnBuild(
                 instruction=instruction
             )
@@ -572,7 +1019,7 @@ class Image:
                 mount_type_name
             )(mount)
 
-        self.layers.append(
+        self._layers.append(
             Run(
                 command=command,
                 mount=mount_type,
@@ -590,7 +1037,7 @@ class Image:
             List[str | int | float | bool]
         ]
     ):
-        self.layers.append(
+        self._layers.append(
             Shell(
                 executable=executable,
                 parameters=parameters
@@ -603,13 +1050,15 @@ class Image:
         self,
         base: str,
         tag: str,
-        alias: Optional[str]=None
+        alias: Optional[str]=None,
+        platform: Optional[str]=None
     ):
-        self.layers.append(
+        self._layers.append(
             Stage(
                 base=base,
                 tag=tag,
-                alias=alias
+                alias=alias,
+                platform=platform
             )
         )
 
@@ -619,7 +1068,7 @@ class Image:
         self,
         signal: int
     ):
-        self.layers.append(
+        self._layers.append(
             StopSignal(
                 signal=signal
             )
@@ -632,7 +1081,7 @@ class Image:
         user_id: str,
         group_id: Optional[str]=None
     ):
-        self.layers.append(
+        self._layers.append(
             User(
                 user_id=user_id,
                 group_id=group_id
@@ -645,7 +1094,7 @@ class Image:
         self,
         paths: List[str]
     ):
-        self.layers.append(
+        self._layers.append(
             Volume(
                 paths=paths
             )
@@ -657,7 +1106,7 @@ class Image:
         self,
         path: str
     ):
-        self.layers.append(
+        self._layers.append(
             Workdir(
                 path=path
             )

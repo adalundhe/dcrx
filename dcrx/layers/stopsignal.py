@@ -19,7 +19,7 @@ class StopSignal(BaseModel):
         line: str
     ):
         
-        line = re.sub('STOPSIGNAL', '', line).strip()
+        line = re.sub('STOPSIGNAL ', '', line, count=1).strip()
         return StopSignal(
             signal=int(
                 re.sub(

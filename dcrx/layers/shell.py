@@ -42,7 +42,7 @@ class Shell(BaseModel):
         line: str
     ):
         
-        line = re.sub('SHELL', '', line)
+        line = re.sub('SHELL ', '', line, count=1)
         command = [
             arg.strip() for arg in re.sub(
                 r'\[|\]', 

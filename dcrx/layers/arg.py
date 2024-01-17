@@ -31,7 +31,7 @@ class Arg(BaseModel):
         line: str
     ):
         
-        line = re.sub('ARG', '', line)
+        line = re.sub('ARG ', '', line, count=1)
         token = line.strip()
 
         options: Dict[

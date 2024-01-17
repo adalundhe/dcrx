@@ -10,31 +10,48 @@ class Stage(BaseModel):
     layer_type: Literal["stage"]="stage"
     base: StrictStr
     tag: StrictStr
+    platform: Optional[StrictStr]=None
     alias: Optional[StrictStr]=None
 
     def to_string(self) -> str:
+
+        from_args = ['FROM']
+
+        if self.platform:
+            from_args.append(self.platform)
+
+        from_args.append(
+            f'{self.base}:{self.tag}'
+        )
         
         if self.alias:
-            return f'FROM {self.base}:{self.tag} as {self.alias}'
+            from_args.append(f'AS {self.alias}')
         
-        return f'FROM {self.base}:{self.tag}'
+        return ' '.join(from_args)
     
     @classmethod
     def parse(
         cls,
         line: str
     ):
-        
-        line = re.sub('FROM', '', line).strip()
-        options: Dict[str, str] = {}
+        line = re.sub('FROM ', '', line, count=1).strip()
+        templated_alias_pattern = re.compile(r' as (.*)| AS (.*)')
+        templated_platform_pattern = re.compile(r'--platform=([^\s]+)')
 
-        if alias := re.search(
-            r'as(.*)',
+        options: Dict[str, str] = {}
+        
+        if platform_match := re.search(
+            templated_platform_pattern,
             line
         ):
-            options['alias'] = alias.group(0)
+            options['platform'] = re.sub(
+                '--platform=',
+                '',
+                platform_match.group(0)
+            )
+
             line = re.sub(
-                r'as(.*)',
+                templated_platform_pattern,
                 '',
                 line
             )
@@ -45,6 +62,38 @@ class Stage(BaseModel):
         else:
             base = line
             tag = 'latest'
+
+        if alias := re.search(
+            templated_alias_pattern,
+            line
+        ):
+            options['alias'] = re.sub(
+                r' as | AS ',
+                '',
+                alias.group(0)
+            )
+            base = re.sub(
+                templated_alias_pattern,
+                '',
+                base
+            )
+
+
+        if alias := re.search(
+            templated_alias_pattern,
+            tag
+        ):
+            options['alias'] = re.sub(
+                r' as | AS ',
+                '',
+                alias.group(0)
+            )
+
+            tag = re.sub(
+                templated_alias_pattern,
+                '',
+                tag
+            )
 
         return Stage(
             base=base,

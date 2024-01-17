@@ -51,7 +51,7 @@ class OnBuild(BaseModel):
         cls,
         line: str
     ):
-        line = re.sub('ONBUILD', '', line).strip()
+        line = re.sub('ONBUILD ', '', line, count=1).strip()
 
         directives: Dict[
             Literal[
@@ -135,7 +135,7 @@ class OnBuild(BaseModel):
             ] = directive_type.group(0) 
             directive = directives[directive_name]
 
-            token = re.sub(directive_name, '', line)
+            token = re.sub(f'${directive_name} ', '', line, count=1)
 
             return directive.parse(token)
 

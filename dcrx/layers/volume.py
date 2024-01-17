@@ -21,7 +21,7 @@ class Volume(BaseModel):
         cls,
         line: str
     ):
-        line = re.sub('VOLUME', '', line).strip()
+        line = re.sub('VOLUME ', '', line, count=1).strip()
         paths = [
             arg.strip() for arg in re.sub(
                 r'\[|\]', 

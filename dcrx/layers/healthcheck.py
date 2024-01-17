@@ -44,7 +44,7 @@ class Healthcheck(BaseModel):
         cls,
         line: str
     ):
-        line = re.sub('ADD', '', line)
+        line = re.sub('ADD ', '', line, count=1)
 
         options: Dict[str, int | Cmd] = {}
 

@@ -6,7 +6,10 @@ from pydantic import (
     constr
 )
 
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional, Dict, List, Any
+from .arg import Arg
+from .env import Env
+
 
 class Add(BaseModel):
     layer_type: Literal["add"]="add"
@@ -44,7 +47,7 @@ class Add(BaseModel):
         line: str,
     ):
         
-        line = re.sub('ADD', '', line).strip()
+        line = re.sub('ADD ', '', line, count=1).strip()
         tokens = line.strip('\n').split(' ')
 
         options: Dict[str, str | bool | int] = {}

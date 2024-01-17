@@ -15,8 +15,13 @@ class Cmd(BaseModel):
     command: List[Union[StrictStr, StrictInt, StrictFloat, StrictBool]]
 
     def to_string(self):
+
+        parsed_args = [
+            arg.replace('"', '') if isinstance(arg, str) else arg for arg in self.command
+        ]
+
         command = ', '.join([
-            f'"{arg}"' for arg in self.command
+            f'"{arg}"' for arg in parsed_args
         ])
 
         return f'CMD [{command}]'
@@ -27,7 +32,7 @@ class Cmd(BaseModel):
         line: str
     ):
         
-        line = re.sub('CMD', '', line).strip()
+        line = re.sub('CMD ', '', line, count=1).strip()
         command = [
             arg.strip() for arg in re.sub(
                 r'\[|\]', 

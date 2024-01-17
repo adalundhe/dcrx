@@ -20,7 +20,7 @@ class Label(BaseModel):
         line: str
     ):
         
-        line = re.sub('LABEL', '', line)
+        line = re.sub('LABEL ', '', line, count=1)
         name, value = line.strip().split('=')
 
         return Label(

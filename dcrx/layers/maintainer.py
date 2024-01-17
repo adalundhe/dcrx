@@ -19,7 +19,7 @@ class Maintainer(BaseModel):
         line: str
     ):
         
-        line = re.sub('MAINTAINER', '', line)
+        line = re.sub('MAINTAINER ', '', line, count=1)
         author = line.strip()
 
         return Maintainer(

@@ -24,9 +24,10 @@ class User(BaseModel):
         line: str
     ):
         line = re.sub(
-            'USER', 
+            'USER ', 
             '', 
-            line
+            line,
+            count=1
         ).strip()
 
         user_id, group_id = cls._match_permissions(line)

@@ -56,7 +56,7 @@ class Run(BaseModel):
         line: str
     ):
         
-        line = re.sub('RUN', '', line)
+        line = re.sub('RUN ', '', line, count=1)
         tokens = line.strip('\n').split(' ')
 
         options: Dict[str, str | bool | int] = {}

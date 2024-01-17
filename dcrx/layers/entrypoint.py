@@ -24,7 +24,7 @@ class Entrypoint(BaseModel):
         line: str
     ):
         
-        line = re.sub('ENTRYPOINT', '', line).strip()
+        line = re.sub('ENTRYPOINT ', '', line, count=1).strip()
         command = [
             arg.strip() for arg in re.sub(
                 r'\[|\]', 
