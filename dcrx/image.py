@@ -755,18 +755,37 @@ class Image:
 
         return tar_file
     
-    def to_file(self):
-        self.files.append(self.filename)
+    def to_file(
+        self,
+        filepath: Optional[str]=None
+    ):
+        if filepath is None:
+            filepath = self.filename
+            
+        elif filepath != self.filename:
+            self.filename = filepath
 
-        with open(self.filename, 'w') as dockerfile:
+        self.files.append(filepath)
+
+        with open(filepath, 'w') as dockerfile:
             dockerfile.write(
                 self.to_string()
             )
 
-    def to_memory_file(self):
-        self.files.append(self.filename)
+    def to_memory_file(
+        self,
+        filepath: Optional[str]=None
+    ):
+        
+        if filepath is None:
+            filepath = self.filename
 
-        with open(self.filename, 'w') as dockerfile:
+        elif filepath != self.filename:
+            self.filename = filepath
+
+        self.files.append(filepath)
+
+        with open(filepath, 'w') as dockerfile:
             dockerfile.write(
                 self.to_string()
             )
