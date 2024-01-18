@@ -10,7 +10,8 @@ from typing import (
     Dict,
     Any,
     Literal,
-    Tuple
+    Tuple,
+    Set
 )
 from .layers import (
     Add,
@@ -105,6 +106,17 @@ class Image:
         }
 
         self.directives = Directives()
+        self._variable_template_pattern = re.compile(
+            r'(\$\{)([^\}]+)\}|(\$)([\w]+)'
+        )
+
+        self._variable_resolved_name_pattern = re.compile(
+            r'(?<=\$\{).+?(?=:-|\})|(?<=\$)([\w]+)'
+        )
+
+        self._variable_clean_pattern = re.compile(
+            r'\$|\{|\}'
+        )
 
     @property
     def full_name(self):
@@ -355,8 +367,15 @@ class Image:
         
         return LayerQuery(self._layers)
     
-    def resolve(self):
+    def resolve(
+        self,
+        defaults: Dict[
+            str,
+            str
+        ]={}
+    ):
         resolved_args = self.get_resolved_args()
+        resolved_args.update(defaults)
 
         layers = list(self._layers)
 
@@ -372,7 +391,7 @@ class Image:
 
             elif isinstance(layer, Env):
                 values = []
-                for key_idx, key in layer.keys:
+                for key_idx, key in enumerate(layer.keys):
                     values.append(
                         resolved_args.get(
                             key,
@@ -392,9 +411,6 @@ class Image:
         )
 
         image.from_layers(layers)
-
-        arg_layers = image.layers(layer_types='arg')
-        env_layers = image.layers(layer_types='env')
 
         resolved_layers: List[
             Add |
@@ -421,8 +437,6 @@ class Image:
             if not isinstance(layer, (Arg, Env)):
                 layer = self._resolve_layer(
                     layer,
-                    arg_layers,
-                    env_layers,
                     resolved_args
                 )
 
@@ -439,65 +453,77 @@ class Image:
         for arg in arg_layers:
 
             arg_name = re.sub(
-                r'\$|\{|\}',
+                self._variable_clean_pattern,
                 '',
                 arg.name
             )
-
-            if arg_values.get(arg_name) is None:
+            
+            if arg_values.get(
+                arg_name
+            ) is None and arg.default and (
+                not re.search(
+                    self._variable_template_pattern,
+                    arg.default
+                )
+            ):
                 arg_values[arg_name] = arg.default
-        
+
         resolved_args: Dict[str, Any] = {}
         for arg_name in arg_values:
             resolved_args[arg_name] = self._reduce_args(
                 arg_name,
                 arg_values
             )
-
         
         for arg_name, value in resolved_args.items():
-            if value:
-                for match in re.finditer(
-                    r'(\$\{)([^\}]+)\}|(\$)([\w]+)',
-                    value
+            for match in re.finditer(
+                self._variable_template_pattern,
+                value or ''
+            ):
+                arg_value: str| None = None
+                if arg_variable := re.search(
+                    self._variable_resolved_name_pattern,
+                    match.group(0)
                 ):
-                    if isinstance(match, re.Match):
-                        arg_variable = re.sub(
-                            r'\$|\{|\}',
-                            '',
-                            match.group(0)   
-                        )
-                        arg_value = resolved_args.get(arg_variable)
-                        if arg_value:
-                            value = re.sub(
-                                match.group(0),
-                                arg_value,
-                                value
-                            )
+                    arg_value = resolved_args.get(
+                        arg_variable.group(0)
+                    )
 
-                    resolved_args[arg_name] = value
+                if arg_value:
+                    value = re.sub(
+                        match.group(0),
+                        arg_value,
+                        value
+                    )
+
+                resolved_args[arg_name] = value
 
         env_values: Dict[str, Any] = {}
         env_layers = self.layers(layer_types='env')
         for env in env_layers:
             for key, value in zip(env.keys, env.values):
-                if env_values.get(key):
+                if env_values.get(key) and isinstance(value, str):
                     for match in re.finditer(
-                        r'(\$\{)([^\}]+)\}|(\$)([\w]+)',
+                        self._variable_template_pattern,
                         value
                     ):
-                        if isinstance(match, re.Match):
-                            envar_variable = re.sub(
-                                r'\$|\{|\}',
-                                '',
-                                match.group(0)   
+                        arg_value: str | None = None
+                        if envar_variable := re.search(
+                            self._variable_resolved_name_pattern,
+                            match.group(0)
+                        ):
+                            arg_value = resolved_args.get(
+                                envar_variable.group(0)
                             )
 
-                            arg_value = resolved_args.get(envar_variable)
-                            if arg_value:
-                                value = arg_value
+                        if arg_value:
+                            value = arg_value
 
-                env_values[key] = value
+                if not re.search(
+                    self._variable_template_pattern,
+                    value
+                ):
+                    env_values[key] = value
             
         resolved_args.update(env_values)
 
@@ -509,7 +535,7 @@ class Image:
                     resolved_args
                 )
             )
-
+            
         return resolved_args
     
     def _resolve_layer(
@@ -532,112 +558,78 @@ class Image:
             Volume | 
             Workdir
         ),
-        arg_layers: List[Arg],
-        env_layers: List[Env],
         resolved_args: Dict[str, Any]
     ):
         model_data = layer.model_dump()
         for field, field_value in model_data.items():
-            for arg in arg_layers:
-                
-                is_replaceable_string = isinstance(
-                    field_value, 
-                    str
-                ) and arg.name in field_value and arg.default
+            if isinstance(
+                field_value, str
+            ):
 
-                is_braced_arg = is_replaceable_string and field_value.startswith(
-                    '${'
-                ) and field_value.endswith('}')
-
-                if is_replaceable_string and is_braced_arg:
-                    model_data[field] = field_value.replace(
-                        '${' + arg.name + '}',
-                        resolved_args.get(arg.name)
-                    )
-                
-                elif is_replaceable_string:
-                    model_data[field] = field_value.replace(
-                        '$' + arg.name,
-                        resolved_args.get(arg.name)
-                    )
-
-
-                elif isinstance(
-                    field_value,
-                    list
+                matches: Set[str] = set()
+                for match in re.finditer(
+                    self._variable_template_pattern,
+                    field_value
                 ):
-                    for idx, value_item in enumerate(field_value):
-
-                        is_replaceable_string = isinstance(
-                            value_item, 
-                            str
-                        ) and arg.name in value_item and arg.default
-
-                        is_braced_arg = is_replaceable_string and value_item.startswith(
-                            '${'
-                        ) and value_item.endswith('}')
-
-                        if is_replaceable_string and is_braced_arg:
-                            model_data[field][idx] = value_item.replace(
-                                '${' + arg.name + '}',
-                                resolved_args.get(arg.name)
-                            )
-                        elif is_replaceable_string:
-                            model_data[field] = value_item.replace(
-                                '$' + arg.name,
-                                resolved_args.get(arg.name)
-                            )
-
-            for env in env_layers:
-                for key, value in zip(env.keys, env.values):
-
-                    is_replaceable_string = isinstance(
-                        field_value, 
-                        str
-                    ) and key in field_value and value
-
-                    is_braced_arg = is_replaceable_string and field_value.startswith(
-                        '${'
-                    ) and field_value.endswith('}')
-
-                    if is_replaceable_string and is_braced_arg:
-                        model_data[field] = field_value.replace(
-                            '${' + key + '}',
-                            resolved_args.get(key)
-                        )
-                    
-                    elif is_replaceable_string:
-                        model_data[field] = field_value.replace(
-                            '$' + key,
-                            resolved_args.get(key)
-                        )
-                        
-                    elif isinstance(
-                        field_value,
-                        list
+                    if resolved_name := re.search(
+                        self._variable_resolved_name_pattern,
+                        match.group(0)
                     ):
-                        for idx, value_item in enumerate(field_value):
+                        matches.add((
+                            resolved_name.group(0),
+                            match.group(0)
+                        ))
 
-                            is_replaceable_string = isinstance(
-                                value_item, 
-                                str
-                            ) and key in value_item and value
+                matches = list(matches)
+                updated_string = re.sub(
+                    self._variable_clean_pattern,
+                    '',
+                    field_value
+                )
 
-                            is_braced_arg = is_replaceable_string and value_item.startswith(
-                                '${'
-                            ) and value_item.endswith('}')
-                            
-                            if is_replaceable_string and is_braced_arg:
-                                model_data[field][idx] = value_item.replace(
-                                    '${' + key + '}',
-                                    resolved_args.get(arg.name)
+                for resolved_name, match in matches:
+                    if resolved_value := resolved_args.get(resolved_name):
+                        updated_string = updated_string.replace(
+                            resolved_name,
+                            resolved_value
+                        )
+
+                model_data[field] = updated_string
+
+            elif isinstance(field_value, list):
+                for idx, value in enumerate(field_value):
+                    if isinstance(
+                        value, str
+                    ):
+                        matches: Set[str] = set()
+                        for match in re.finditer(
+                            self._variable_template_pattern,
+                            value
+                        ):
+                            if resolved_name := re.search(
+                                self._variable_resolved_name_pattern,
+                                match.group(0)
+                            ):
+                                matches.add((
+                                    resolved_name.group(0),
+                                    match.group(0)
+                                ))
+
+                        matches = list(matches)
+                        updated_string = re.sub(
+                            self._variable_clean_pattern,
+                            '',
+                            value
+                        )
+
+                        for resolved_name, match in matches:
+                            if resolved_value := resolved_args.get(resolved_name):
+                                updated_string = updated_string.replace(
+                                    resolved_name,
+                                    resolved_value
                                 )
 
-                            elif is_replaceable_string:
-                                model_data[field][idx] = value_item.replace(
-                                    '$' + key,
-                                    resolved_args.get(arg.name)
-                                )
+                        model_data[field][idx] = updated_string
 
         return layer.model_copy(
             update=model_data
@@ -696,7 +688,7 @@ class Image:
                 resolved_value
             ):
                 match_key = re.sub(
-                    r'\$|\{|\}',
+                    self._variable_clean_pattern,
                     '',
                     match.group(0)
                 )
