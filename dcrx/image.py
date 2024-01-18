@@ -127,10 +127,10 @@ class Image:
             yield layer
     
     @classmethod
-    def load_image_from_file(
+    def generate_from_file(
         cls,
         filepath: str,
-        path: Optional[str]=None
+        output_path: Optional[str]=None
     ):
         layers: List[
             Add |
@@ -169,11 +169,14 @@ class Image:
 
             image_source: Stage = image_sources[-1]
 
+            if output_path:
+                filename = output_path
+
             image = Image(
                 image_source.base,
                 tag=image_source.tag,
                 filename=filename,
-                path=path
+                path=output_path
             )
 
             image.from_layers(layers)
@@ -181,11 +184,11 @@ class Image:
             return image
 
     @classmethod
-    def load_image_from_string(
+    def generate_from_string(
         cls,
         dockerfile: str | bytes | List[str] | List[bytes],
         filename: Optional[str]=None,
-        path: Optional[str]=None
+        output_path: Optional[str]=None
     ):
         layers: List[
             Add |
@@ -223,16 +226,19 @@ class Image:
         if len(image_sources) < 1:
             return Image(
                 'Unknown',
-                path=path
+                path=output_path
             )
 
         image_source = image_sources[-1]
+
+        if output_path:
+            filename = output_path
 
         image = Image(
             image_source.base,
             tag=image_source.tag,
             filename=filename,
-            path=path
+            path=output_path
         )
 
         image.from_layers(layers)
@@ -372,10 +378,15 @@ class Image:
         defaults: Dict[
             str,
             str
-        ]={}
+        ]={},
+        skip: List[str]=[]
     ):
         resolved_args = self.get_resolved_args()
         resolved_args.update(defaults)
+
+        resolved_args = {
+            arg: value for arg, value in resolved_args.items() if arg not in skip
+        }
 
         layers = list(self._layers)
 
@@ -581,20 +592,16 @@ class Image:
                         ))
 
                 matches = list(matches)
-                updated_string = re.sub(
-                    self._variable_clean_pattern,
-                    '',
-                    field_value
-                )
 
                 for resolved_name, match in matches:
                     if resolved_value := resolved_args.get(resolved_name):
-                        updated_string = updated_string.replace(
-                            resolved_name,
-                            resolved_value
+                        field_value = re.sub(
+                            r'\$\{' + f'{resolved_name}?' + r'\}|\$' + f'{resolved_name}',
+                            resolved_value,
+                            field_value
                         )
 
-                model_data[field] = updated_string
+                model_data[field] = field_value
 
             elif isinstance(field_value, list):
                 for idx, value in enumerate(field_value):
@@ -616,20 +623,16 @@ class Image:
                                 ))
 
                         matches = list(matches)
-                        updated_string = re.sub(
-                            self._variable_clean_pattern,
-                            '',
-                            value
-                        )
-
+                        
                         for resolved_name, match in matches:
                             if resolved_value := resolved_args.get(resolved_name):
-                                updated_string = updated_string.replace(
-                                    resolved_name,
-                                    resolved_value
+                                value = re.sub(
+                                    r'\$\{' + f'{resolved_name}?' + r'\}|\$' + f'{resolved_name}',
+                                    resolved_value,
+                                    value
                                 )
 
-                        model_data[field][idx] = updated_string
+                        model_data[field][idx] = value
 
         return layer.model_copy(
             update=model_data
