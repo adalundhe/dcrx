@@ -658,7 +658,7 @@ class Image:
         destination: str,
         user_id: Optional[str] = None,
         group_id: Optional[str] = None,
-        permissions: Optional[int] = None,
+        permissions: Optional[Literal[r"^[0-7]*$"]] = None,
         from_layer: Optional[str] = None,
         link: bool = False,
     ):
