@@ -1,5 +1,10 @@
-from .bind_mount import BindMount
-from .cache_mount import CacheMount
-from .secret_mount import SecretMount
-from .ssh_mount import SSHMount
-from .tmpfs_mount import TMPFSMount
+from .bind_mount import BindMount as BindMount
+from .bind_mount import BindMountConfig as BindMountConfig
+from .cache_mount import CacheMount as CacheMount
+from .cache_mount import CacheMountConfig as CacheMountConfig
+from .secret_mount import SecretMount as SecretMount
+from .secret_mount import SecretMountConfig as SecretMountConfig
+from .ssh_mount import SSHMount as SSHMount
+from .ssh_mount import SSHMountConfig as SSHMountConfig
+from .tmpfs_mount import TMPFSMount as TMPFSMount
+from .tmpfs_mount import TMPFSMountConfig as TMPFSMountConfig

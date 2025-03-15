@@ -3,13 +3,25 @@ from typing import Dict, Literal
 
 from pydantic import BaseModel, StrictBool, StrictStr, constr
 
+SSHMountConfig = Dict[
+    Literal[
+        "id",
+        "target",
+        "required",
+        "mode",
+        "user_id",
+        "group_id",
+    ],
+    Literal["ssh"] | str | bool | Literal[r"^[0-7]*$"],
+]
+
 
 class SSHMount(BaseModel):
     mount_type: Literal["ssh"] = "ssh"
     id: StrictStr | None = None
     target: StrictStr | None = None
     required: StrictBool | None = None
-    mode: constr(max_length=4, pattern=r"^[0-9]*$") | None = None
+    mode: constr(max_length=4, pattern=r"^[0-7]*$") | None = None
     user_id: StrictStr | None = None
     group_id: StrictStr | None = None
 
@@ -54,13 +66,13 @@ class SSHMount(BaseModel):
                 required_value = re.sub(r"required=", "", required.group(0))
                 options["required"] = True if required_value == "true" else None
 
-            elif mode := re.search(r"--mode=[0-7]{4}|[0-7]{3}", token):
-                options["mode"] = re.sub(r"[0-7]{4}|[0-7]{3}", "", mode.group(0))
+            elif mode := re.search(r"mode=[0-7]{4}|[0-7]{3}", token):
+                options["mode"] = re.sub(r"mode=", "", mode.group(0))
 
-            elif uid := re.search(r"--uid=[0-7]{4}|[0-7]{3}", token):
-                options["user_id"] = re.sub(r"[0-7]{1,4}", "", uid.group(0))
+            elif uid := re.search(r"uid=[0-7]{4}|[0-7]{3}", token):
+                options["user_id"] = re.sub(r"uid=", "", uid.group(0))
 
-            elif gid := re.search(r"--uid=[0-7]{4}|[0-7]{3}", token):
-                options["group_id"] = re.sub(r"[0-7]{1,4}", "", gid.group(0))
+            elif gid := re.search(r"gid=[0-7]{4}|[0-7]{3}", token):
+                options["group_id"] = re.sub(r"gid=", "", gid.group(0))
 
         return SSHMount(**options)

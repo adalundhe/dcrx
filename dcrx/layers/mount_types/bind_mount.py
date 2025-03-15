@@ -3,6 +3,29 @@ from typing import Dict, Literal
 
 from pydantic import BaseModel, StrictBool, StrictStr
 
+BindMountConfig = Dict[
+    Literal[
+        "mount_type",
+        "target",
+        "source",
+        "bind_propataion",
+        "from_layer",
+        "enable_readonly",
+        "enable_readwrite",
+    ],
+    Literal["bind"]
+    | str
+    | Literal[
+        "rshared",
+        "shared",
+        "slave",
+        "private",
+        "rslave",
+        "rprivate",
+    ]
+    | bool,
+]
+
 
 class BindMount(BaseModel):
     mount_type: Literal["bind"] = "bind"
@@ -65,8 +88,20 @@ class BindMount(BaseModel):
             elif mount_from := re.search(r"from=(.*)", token):
                 options["from_source"] = re.sub(r"from=", "", mount_from.group(0))
 
+            elif readonly := re.search(r"readonly=(.*)", token):
+                readonly_value = re.sub(r"readonly=", "", readonly.group(0))
+                options["enable_readonly"] = True if readonly_value == "true" else None
+
+            elif re.search(r"readonly", token) or re.search(r"ro", token):
+                options["enable_readonly"] = True
+
             elif readwrite := re.search(r"readwrite=(.*)", token):
                 readwrite_value = re.sub(r"readwrite=", "", readwrite.group(0))
-                options["readwrite"] = True if readwrite_value == "true" else None
+                options["enable_readwrite"] = (
+                    True if readwrite_value == "true" else None
+                )
+
+            elif re.search(r"readwrite", token) or re.search(r"rw", token):
+                options["enable_readwrite"] = True
 
         return BindMount(**options)

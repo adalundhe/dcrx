@@ -3,6 +3,31 @@ from typing import Dict, Literal
 
 from pydantic import BaseModel, StrictBool, StrictInt, StrictStr, constr
 
+TMPFSMountConfig = Dict[
+    Literal[
+        "enable_readonly",
+        "enable_readwrite",
+        "enable_nosuid",
+        "enable_suid",
+        "enabled_nodev",
+        "enabled_dev",
+        "enable_exec",
+        "enable_sync",
+        "enable_async",
+        "enable_dirsync",
+        "enable_noatime",
+        "enable_diratime",
+        "target",
+        "mode",
+        "user_id",
+        "group_id",
+        "size",
+        "number_inodes",
+        "number_blocks",
+    ],
+    Literal["tmpfs"] | str | bool | Literal[r"^[0-7]*$"] | int,
+]
+
 
 class TMPFSMount(BaseModel):
     mount_type: Literal["tmpfs"] = "tmpfs"
@@ -19,9 +44,9 @@ class TMPFSMount(BaseModel):
     enable_noatime: StrictBool | None = None
     enable_diratime: StrictBool | None = None
     target: StrictStr
-    mode: constr(max_length=4, pattern=r"^[0-9]*$") | None = None
-    user_id: StrictInt | None = None
-    group_id: StrictInt | None = None
+    mode: constr(max_length=4, pattern=r"^[0-7]*$") | None = None
+    user_id: StrictStr | None = None
+    group_id: StrictStr | None = None
     size: StrictInt | None = None
     number_inodes: StrictInt | None = None
     number_blocks: StrictInt | None = None
@@ -97,6 +122,74 @@ class TMPFSMount(BaseModel):
 
             elif size := re.search(r"size=[0-9]{*}", token):
                 options["size"] = cls._match_size(size.group(0))
+
+            elif readonly := re.search(r"readonly=(.*)", token):
+                readonly_value = re.sub(r"readonly=", "", readonly.group(0))
+                options["enable_readonly"] = True if readonly_value == "true" else None
+
+            elif re.search(r"readonly", token) or re.search(r"ro", token):
+                options["enable_readonly"] = True
+
+            elif readwrite := re.search(r"readwrite=(.*)", token):
+                readwrite_value = re.sub(r"readwrite=", "", readwrite.group(0))
+                options["enable_readwrite"] = (
+                    True if readwrite_value == "true" else None
+                )
+
+            elif re.search(r"readwrite", token) or re.search(r"rw", token):
+                options["enable_readwrite"] = True
+
+            elif re.search(r"nosuid", token):
+                options["enable_nosuid"] = True
+
+            elif re.search(r"suid", token):
+                options["enable_suid"] = True
+
+            elif re.search(r"nodev", token):
+                options["enable_nodev"] = True
+
+            elif re.search(r"dev", token):
+                options["enable_dev"] = True
+
+            elif re.search(r"exec", token):
+                options["enable_exec"] = True
+
+            elif re.search(r"async", token):
+                options["enable_async"] = True
+
+            elif re.search(r"dirsync", token):
+                options["enable_dirsync"] = True
+
+            elif re.search(r"sync", token):
+                options["enable_sync"] = True
+
+            elif re.search(r"noatime", token):
+                options["enable_noatime"] = True
+
+            elif re.search(r"diratime", token):
+                options["enable_diratime"] = True
+
+            elif mode := re.search(r"mode=[0-7]{4}|[0-7]{3}", token):
+                options["mode"] = re.sub(r"mode=", "", mode.group(0))
+
+            elif uid := re.search(r"uid=[0-7]{4}|[0-7]{3}", token):
+                options["user_id"] = re.sub(r"uid=", "", uid.group(0))
+
+            elif gid := re.search(r"gid=[0-7]{4}|[0-7]{3}", token):
+                options["group_id"] = re.sub(r"gid=", "", gid.group(0))
+
+            elif size := re.search(r"size=\d+", token):
+                options["group_id"] = int(re.sub(r"size=", "", size.group(0)))
+
+            elif number_inodes := re.search(r"nr_inodes=\d+", token):
+                options["number_inodes"] = int(
+                    re.sub(r"nr_inodes=", "", number_inodes.group(0))
+                )
+
+            elif number_blocks := re.search(r"nr_blocks=\d+", token):
+                options["number_blocks"] = int(
+                    re.sub(r"nr_blocks=", "", number_blocks.group(0))
+                )
 
         return TMPFSMount(**options)
 

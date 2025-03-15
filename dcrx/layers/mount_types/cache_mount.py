@@ -3,6 +3,27 @@ from typing import Dict, Literal
 
 from pydantic import BaseModel, StrictBool, StrictStr, constr
 
+CacheMountConfig = Dict[
+    Literal[
+        "mount_type",
+        "id",
+        "target",
+        "source",
+        "from_layer",
+        "enable_readonly",
+        "enable_readwrite",
+        "sharing",
+        "mode",
+        "user_id",
+        "group_id",
+    ],
+    Literal["cache"]
+    | str
+    | bool
+    | Literal["shared", "private", "locked"]
+    | Literal[r"^[0-7]*$"],
+]
+
 
 class CacheMount(BaseModel):
     mount_type: Literal["cache"] = "cache"
@@ -75,24 +96,36 @@ class CacheMount(BaseModel):
                 options["source"] = re.sub(r"source=", "", source.group(0))
 
             elif mount_from := re.search(r"from=(.*)", token):
-                options["from_source"] = re.sub(r"from=", "", mount_from.group(0))
+                options["from_layer"] = re.sub(r"from=", "", mount_from.group(0))
 
             elif readonly := re.search(r"readonly=(.*)", token):
                 readonly_value = re.sub(r"readonly=", "", readonly.group(0))
-                options["readonly"] = True if readonly_value == "true" else None
+                options["enable_readonly"] = True if readonly_value == "true" else None
+
+            elif re.search(r"readonly", token) or re.search(r"ro", token):
+                options["enable_readonly"] = True
+
+            elif readwrite := re.search(r"readwrite=(.*)", token):
+                readwrite_value = re.sub(r"readwrite=", "", readwrite.group(0))
+                options["enable_readwrite"] = (
+                    True if readwrite_value == "true" else None
+                )
+
+            elif re.search(r"readwrite", token) or re.search(r"rw", token):
+                options["enable_readwrite"] = True
 
             elif sharing := re.search(r"sharing=(shared|private|locked)", token):
                 options["sharing"] = re.search(
                     r"shared|private|locked", sharing.group(0)
                 ).group(0)
 
-            elif mode := re.search(r"--mode=[0-7]{4}|[0-7]{3}", token):
-                options["mode"] = re.sub(r"[0-7]{4}|[0-7]{3}", "", mode.group(0))
+            elif mode := re.search(r"mode=[0-7]{4}|[0-7]{3}", token):
+                options["mode"] = re.sub(r"mode=", "", mode.group(0))
 
-            elif uid := re.search(r"--uid=[0-7]{4}|[0-7]{3}", token):
-                options["user_id"] = re.sub(r"[0-7]{1,4}", "", uid.group(0))
+            elif uid := re.search(r"uid=[0-7]{4}|[0-7]{3}", token):
+                options["user_id"] = re.sub(r"uid=", "", uid.group(0))
 
-            elif gid := re.search(r"--uid=[0-7]{4}|[0-7]{3}", token):
-                options["group_id"] = re.sub(r"[0-7]{1,4}", "", gid.group(0))
+            elif gid := re.search(r"gid=[0-7]{4}|[0-7]{3}", token):
+                options["group_id"] = re.sub(r"gid=", "", gid.group(0))
 
         return CacheMount(**options)
