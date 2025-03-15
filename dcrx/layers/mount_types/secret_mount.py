@@ -8,6 +8,7 @@ class SecretMount(BaseModel):
     mount_type: Literal["secret"] = "secret"
     id: StrictStr | None = None
     target: StrictStr | None = None
+    env: StrictStr | None = None
     required: StrictBool | None = None
     mode: constr(max_length=4, pattern=r"^[0-9]*$") | None = None
     user_id: StrictStr | None = None
@@ -21,6 +22,9 @@ class SecretMount(BaseModel):
 
         if self.target:
             mount_string = f"{mount_string},target={self.target}"
+
+        if self.env:
+            mount_string = f"{mount_string},env={self.env}"
 
         if self.required is not None:
             required = "true" if self.required else False

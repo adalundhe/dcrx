@@ -9,7 +9,7 @@ class CacheMount(BaseModel):
     id: StrictStr | None = None
     target: StrictStr
     source: StrictStr | None = None
-    from_source: StrictStr | None = None
+    from_layer: StrictStr | None = None
     readonly: StrictBool | None = None
     sharing: Literal["shared", "private", "locked"] = None
     mode: constr(max_length=4, pattern=r"^[0-7]*$") | None = None
@@ -25,8 +25,8 @@ class CacheMount(BaseModel):
         if self.source:
             mount_string = f"{mount_string},source={self.source}"
 
-        if self.from_source:
-            mount_string = f"{mount_string},from={self.from_source}"
+        if self.from_layer:
+            mount_string = f"{mount_string},from={self.from_layer}"
 
         if self.readonly is not None:
             readonly = "true" if self.readonly else "false"

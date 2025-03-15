@@ -8,7 +8,18 @@ class BindMount(BaseModel):
     mount_type: Literal["bind"] = "bind"
     target: StrictStr
     source: StrictStr | None = None
-    from_source: StrictStr | None = None
+    bind_propagation: (
+        Literal[
+            "rshared",
+            "shared",
+            "slave",
+            "private",
+            "rslave",
+            "rprivate",
+        ]
+        | None
+    ) = None
+    from_layer: StrictStr | None = None
     readwrite: StrictBool | None = None
 
     def to_string(self) -> str:
@@ -17,8 +28,8 @@ class BindMount(BaseModel):
         if self.source:
             mount_string = f"{mount_string},source={self.source}"
 
-        if self.from_source:
-            mount_string = f"{mount_string},from={self.from_source}"
+        if self.from_layer:
+            mount_string = f"{mount_string},from={self.from_layer}"
 
         if self.readwrite:
             readwrite_string = "readwrite"
