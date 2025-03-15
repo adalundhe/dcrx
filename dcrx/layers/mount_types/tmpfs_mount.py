@@ -18,6 +18,7 @@ TMPFSMountConfig = Dict[
         "enable_atime",
         "enable_noatime",
         "enable_diratime",
+        "enable_nodiratime",
         "target",
         "mode",
         "user_id",
@@ -45,6 +46,7 @@ class TMPFSMount(BaseModel):
     enable_atime: StrictBool | None = None
     enable_noatime: StrictBool | None = None
     enable_diratime: StrictBool | None = None
+    enable_nodiratime: StrictBool | None = None
     target: StrictStr
     mode: constr(max_length=4, pattern=r"^[0-7]*$") | None = None
     user_id: StrictStr | None = None
@@ -94,6 +96,9 @@ class TMPFSMount(BaseModel):
 
         if self.enable_diratime:
             mount_string = f"{mount_string},diratime"
+
+        if self.enable_nodiratime:
+            mount_string = f"{mount_string},nodiratime"
 
         if self.mode:
             mount_string = f"{mount_string},mode={self.mode}"
@@ -176,6 +181,9 @@ class TMPFSMount(BaseModel):
 
             elif re.search(r"diratime", token):
                 options["enable_diratime"] = True
+
+            elif re.search(r"nodiratime", token):
+                options["enable_nodiratime"] = True
 
             elif mode := re.search(r"mode=[0-7]{4}|[0-7]{3}", token):
                 options["mode"] = re.sub(r"mode=", "", mode.group(0))
