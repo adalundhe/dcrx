@@ -10,7 +10,7 @@ class Copy(BaseModel):
     destination: StrictStr
     user_id: Optional[StrictStr] = None
     group_id: Optional[StrictStr] = None
-    permissions: Optional[constr(max_length=4, pattern=r"^[0-9]*$")] = None
+    permissions: Optional[constr(max_length=4, pattern=r"^[0-7]*$")] = None
     from_layer: Optional[StrictStr] = None
     link: StrictBool = False
 
@@ -46,17 +46,17 @@ class Copy(BaseModel):
         remainders = []
 
         for token in tokens:
-            if re.search("--link", token):
+            if re.search(r"--link", token):
                 options["link"] = True
 
-            elif re.search("--checksum", token):
+            elif re.search(r"--checksum", token):
                 options["checksum"] = re.sub(r"--checksum=", "", token)
 
-            elif re.search("--from", token):
+            elif re.search(r"--from", token):
                 options["from_layer"] = re.sub(r"--from=", "", token)
 
-            elif re.search("--chown", token):
-                token = re.sub("--checksum=", "", token)
+            elif re.search(r"--chown", token):
+                token = re.sub(r"--checksum=", "", token)
 
                 (user_id, group_id, permissions) = cls._match_permissions(token)
 

@@ -1,6 +1,6 @@
 [project]
 name = "dcrx"
-version = "0.4.8"
+version = "0.4.9"
 description = "A library for typesafe, programmatic generation of Docker images via SQL-builder like API."
 readme = "README.md"
 requires-python = ">=3.11"
