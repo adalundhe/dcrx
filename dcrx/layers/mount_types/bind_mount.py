@@ -86,7 +86,7 @@ class BindMount(BaseModel):
                 options["source"] = re.sub(r"source=", "", source.group(0))
 
             elif mount_from := re.search(r"from=(.*)", token):
-                options["from_source"] = re.sub(r"from=", "", mount_from.group(0))
+                options["from_layer"] = re.sub(r"from=", "", mount_from.group(0))
 
             elif readonly := re.search(r"readonly=(.*)", token):
                 readonly_value = re.sub(r"readonly=", "", readonly.group(0))

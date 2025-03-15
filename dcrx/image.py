@@ -659,7 +659,7 @@ class Image:
         user_id: Optional[str] = None,
         group_id: Optional[str] = None,
         permissions: Optional[int] = None,
-        from_source: Optional[str] = None,
+        from_layer: Optional[str] = None,
         link: bool = False,
     ):
         copy_layer = Copy(
@@ -668,7 +668,7 @@ class Image:
             user_id=user_id,
             group_id=group_id,
             permissions=permissions,
-            from_source=from_source,
+            from_layer=from_layer,
             link=link,
         )
 
