@@ -57,7 +57,7 @@ class SecretMount(BaseModel):
 
     @classmethod
     def parse(cls, line: str):
-        options: Dict[str, str | bool] = {"mount_type": "secret"}
+        options: SecretMountConfig = {"mount_type": "secret"}
 
         tokens = line.split(",")
 

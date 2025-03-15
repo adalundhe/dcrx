@@ -73,7 +73,7 @@ class CacheMount(BaseModel):
     @classmethod
     def parse(cls, line: str):
         lines = line.split(" ")
-        options: Dict[str, str | bool] = {"mount_type": "cache"}
+        options: CacheMountConfig = {"mount_type": "cache"}
 
         if "readonly" in lines:
             options["readonly"] = True

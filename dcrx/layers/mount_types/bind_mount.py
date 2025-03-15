@@ -66,7 +66,7 @@ class BindMount(BaseModel):
     @classmethod
     def parse(cls, line: str):
         lines = line.split(" ")
-        options: Dict[str, str | bool] = {"mount_type": "bind"}
+        options: BindMountConfig = {"mount_type": "bind"}
 
         if "readwrite" in lines:
             options["readwrite"] = True

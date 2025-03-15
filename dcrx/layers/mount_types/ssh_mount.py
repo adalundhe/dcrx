@@ -51,7 +51,7 @@ class SSHMount(BaseModel):
 
     @classmethod
     def parse(cls, line: str):
-        options: Dict[str, str | bool] = {"mount_type": "ssh"}
+        options: SSHMountConfig = {"mount_type": "ssh"}
 
         tokens = line.split(",")
 

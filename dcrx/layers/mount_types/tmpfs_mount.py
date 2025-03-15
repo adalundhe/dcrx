@@ -15,6 +15,7 @@ TMPFSMountConfig = Dict[
         "enable_sync",
         "enable_async",
         "enable_dirsync",
+        "enable_atime",
         "enable_noatime",
         "enable_diratime",
         "target",
@@ -41,6 +42,7 @@ class TMPFSMount(BaseModel):
     enable_sync: StrictBool | None = None
     enable_async: StrictBool | None = None
     enable_dirsync: StrictBool | None = None
+    enable_atime: StrictBool | None = None
     enable_noatime: StrictBool | None = None
     enable_diratime: StrictBool | None = None
     target: StrictStr
@@ -84,6 +86,9 @@ class TMPFSMount(BaseModel):
         if self.enable_dirsync:
             mount_string = f"{mount_string},dirsync"
 
+        if self.enable_atime:
+            mount_string = f"{mount_string},atime"
+
         if self.enable_noatime:
             mount_string = f"{mount_string},noatime"
 
@@ -112,7 +117,7 @@ class TMPFSMount(BaseModel):
 
     @classmethod
     def parse(cls, line: str):
-        options: Dict[str, str | bool] = {"mount_type": "tmpfs"}
+        options: TMPFSMountConfig = {"mount_type": "tmpfs"}
 
         tokens = line.split(",")
 
@@ -162,6 +167,9 @@ class TMPFSMount(BaseModel):
 
             elif re.search(r"sync", token):
                 options["enable_sync"] = True
+
+            if re.search(r"atime", token):
+                options["enable_atime"] = True
 
             elif re.search(r"noatime", token):
                 options["enable_noatime"] = True
