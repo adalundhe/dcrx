@@ -20,7 +20,8 @@ class BindMount(BaseModel):
         | None
     ) = None
     from_layer: StrictStr | None = None
-    readwrite: StrictBool | None = None
+    enable_readonly: StrictBool | None = None
+    enable_readwrite: StrictBool | None = None
 
     def to_string(self) -> str:
         mount_string = f"--mount=type={self.mount_type},target={self.target}"
@@ -31,9 +32,11 @@ class BindMount(BaseModel):
         if self.from_layer:
             mount_string = f"{mount_string},from={self.from_layer}"
 
-        if self.readwrite:
-            readwrite_string = "readwrite"
-            mount_string = f"{mount_string},{readwrite_string}"
+        if self.enable_readonly:
+            mount_string = f"{mount_string},ro"
+
+        if self.enable_readwrite:
+            mount_string = f"{mount_string},rw"
 
         return mount_string
 
