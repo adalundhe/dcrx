@@ -2,8 +2,12 @@
 #    uv pip compile requirements.in
 annotated-types==0.7.0
     # via pydantic
-pydantic==2.10.6
+hyperlight-cocoa==0.1.3
     # via -r requirements.in
+pydantic==2.10.6
+    # via
+    #   -r requirements.in
+    #   hyperlight-cocoa
 pydantic-core==2.27.2
     # via pydantic
 typing-extensions==4.12.2

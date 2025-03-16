@@ -1,6 +1,10 @@
+import importlib
+import importlib.util
+import ntpath
 import os
 import pathlib
 import re
+import sys
 import tarfile
 from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple, Union
 
@@ -116,6 +120,36 @@ class Image:
     def __iter__(self):
         for layer in self._layers:
             yield layer
+
+    @classmethod
+    def import_from_file(cls, filepath: str):
+        path = pathlib.Path(filepath).absolute().resolve()
+        path_str = str(path)
+
+        package_dir = path.parent
+        package_dir_path = str(package_dir)
+        package_dir_module = package_dir_path.split("/")[-1]
+
+        package = ntpath.basename(path)
+        package_slug = package.split(".")[0]
+
+        spec = importlib.util.spec_from_file_location(
+            f"{package_dir_module}.{package_slug}", path_str
+        )
+
+        if path_str not in sys.path:
+            sys.path.append(str(package_dir.parent))
+
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module.__name__] = module
+
+        spec.loader.exec_module(module)
+
+        return {
+            name: value
+            for name, value in module.__dict__.items()
+            if isinstance(value, Image)
+        }
 
     @classmethod
     def generate_from_file(cls, filepath: str, output_path: Optional[str] = None):
