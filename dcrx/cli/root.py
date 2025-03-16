@@ -12,6 +12,7 @@ from cocoa.ui import (
 
 from .compile import compile
 from .new import new
+from .validate import validate
 
 
 async def create_header():
@@ -67,6 +68,7 @@ async def create_header():
 @CLI.root(
     compile,
     new,
+    validate,
     global_styles=CLIStyle(
         header=create_header,
         flag_description_color="white",

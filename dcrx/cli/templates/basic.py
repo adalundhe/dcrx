@@ -1,7 +1,6 @@
 from dcrx import Image
 
 image = Image(
-    "scratch",
-    tag=None,
+    "Example",
     filename="Dockerfile",
-)
+).stage("scratch")

@@ -53,7 +53,7 @@ class Image:
         filename: Optional[str] = None,
         path: Optional[str] = None,
     ) -> None:
-        self.name = name
+        self.name = name.lower()
         self.tag = tag
         self.path = path
         self.files: List[str] = []
@@ -824,9 +824,9 @@ class Image:
     def stage(
         self,
         base: str,
-        tag: str,
-        alias: Optional[str] = None,
-        platform: Optional[str] = None,
+        tag: str | None = None,
+        alias: str | None = None,
+        platform: str | None = None,
     ):
         self._layers.append(Stage(base=base, tag=tag, alias=alias, platform=platform))
 
